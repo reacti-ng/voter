@@ -2,7 +2,7 @@
 import {List} from 'immutable';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {BehaviorSubject, Observable, of, throwError} from 'rxjs';
-import {filter, first, map, shareReplay, switchMap, takeUntil} from 'rxjs/operators';
+import {filter, first, map, shareReplay, switchMap} from 'rxjs/operators';
 
 import {fromJson} from '../json/from-json.operator';
 import {JsonObject} from '../json/json.model';
@@ -79,7 +79,7 @@ export class PageNumberPagination<T> {
     shareReplay(1)
   );
   // Keep page alive
-  private pageSubscription = this.page$.pipe(takeUntil(this.pageNumberSubject)).subscribe();
+  private pageSubscription = this.page$.subscribe();
 
   first(): Observable<List<T>> {
     this.pageNumberSubject.next(1);
@@ -110,6 +110,7 @@ export class PageNumberPagination<T> {
 
   destroy() {
     this.pageNumberSubject.complete();
+    this.pageSubscription.unsubscribe();
   }
 
   setCurrentPage(pageIndex: number | 'last'): Observable<List<T>> {
