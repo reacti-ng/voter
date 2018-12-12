@@ -16,6 +16,7 @@ import {UserModule} from '../user/user.module';
 import {PollSharedModule} from '../poll/poll-shared.module';
 import {OrgSharedModule} from '../org/org-shared.module';
 import {AUTH_STATE_SELECTOR} from '../common/auth/auth.state';
+import {API_BASE_HREF} from '../common/model/api-host.interceptor';
 
 @NgModule({
   imports: [
@@ -37,6 +38,7 @@ import {AUTH_STATE_SELECTOR} from '../common/auth/auth.state';
   ],
   providers: [
     {provide: APP_BASE_HREF, useValue: environment.appBaseHref },
+    {provide: API_BASE_HREF, useValue: environment.apiBaseHref },
     {provide: CONTROLS_STATE_SELECTOR , useValue: selectControlsState},
     {provide: AUTH_STATE_SELECTOR, useValue: selectAuthState}
   ],

@@ -5,7 +5,7 @@
 export const environment = {
   production: false,
   appBaseHref: 'http://localhost:4200',
-  apiBaseHref: 'http://localhost:8080',
+  apiBaseHref: 'http://localhost:8000',
 
   authConfig: {
     authServerHref: 'http://localhost:4200/user/login',
