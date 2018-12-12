@@ -6,6 +6,8 @@ import {OrgMemberDetailsPageComponent} from './features/member-details/member-de
 import {CommonModule} from '@angular/common';
 import {StoreModule} from '@ngrx/store';
 import {orgStateReducer} from './org.state';
+import {OrgAction} from './org.actions';
+import {OrgActivityPageComponent} from './features/activity/activity.component';
 
 @NgModule({
   imports: [
@@ -16,7 +18,7 @@ import {orgStateReducer} from './org.state';
   declarations: [
     OrgMembershipPageComponent,
     OrgMemberDetailsPageComponent,
-
+    OrgActivityPageComponent
   ]
 })
 export class OrgFeatureModule {}

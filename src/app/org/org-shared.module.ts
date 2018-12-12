@@ -4,7 +4,6 @@ import {OrgSearchComponent} from './search/org-search.component';
 import {OrgBadgeComponent} from './badge/badge.component';
 import {PollSharedModule} from '../poll/poll-shared.module';
 import {OrgService} from './org.service';
-import {OrgPollTimelineComponent} from './poll-timeline/poll-timeline.component';
 
 
 @NgModule({
@@ -15,7 +14,6 @@ import {OrgPollTimelineComponent} from './poll-timeline/poll-timeline.component'
   declarations: [
     OrgBadgeComponent,
     OrgSearchComponent,
-    OrgPollTimelineComponent
   ],
   exports: [
     OrgBadgeComponent,
