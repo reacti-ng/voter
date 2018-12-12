@@ -2,10 +2,10 @@ import {Set} from 'immutable';
 import {User} from './user.model';
 
 
-export const SET_LOGIN_USER = 'core.user: set login user';
-export class SetLoginUser {
-  readonly type = SET_LOGIN_USER;
-  constructor(readonly user: User) {}
+export const SET_LOGIN_USER_ID = 'core.user: set login user id';
+export class SetLoginUserId {
+  readonly type = SET_LOGIN_USER_ID;
+  constructor(readonly userId: string | undefined) {}
 }
 
 export const ADD_USER = 'core.user: add user';
@@ -20,8 +20,14 @@ export class AddManyUsers {
   constructor(readonly users: Set<User>) {}
 }
 
-export type UserAction = SetLoginUser | AddUser | AddManyUsers;
+export const UPSERT_USER = 'core.user: upsert user';
+export class UpsertUser {
+  readonly type = UPSERT_USER;
+  constructor(readonly user: User) {}
+}
+
+export type UserAction = SetLoginUserId | AddUser | AddManyUsers | UpsertUser;
 
 export function isUserAction(obj: any): obj is UserAction {
-  return !!obj && [SET_LOGIN_USER, ADD_USER, ADD_MANY_USERS].includes(obj.type);
+  return !!obj && [SET_LOGIN_USER_ID, ADD_USER, ADD_MANY_USERS, UPSERT_USER].includes(obj.type);
 }

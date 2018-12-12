@@ -1,9 +1,8 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {PollListItemComponent} from './list-item/list-item.component';
+import {PollTimelineCardComponent} from './timeline-card/timeline-card.component';
 import {PollService} from './poll.service';
-import {reducePollState} from './poll.state';
-import {StoreModule} from '@ngrx/store';
+import {PollTimelineComponent} from './timeline/timeline.component';
 
 
 @NgModule({
@@ -11,10 +10,11 @@ import {StoreModule} from '@ngrx/store';
     CommonModule
   ],
   declarations: [
-    PollListItemComponent
+    PollTimelineCardComponent,
+    PollTimelineComponent
   ],
   exports: [
-    PollListItemComponent
+    PollTimelineComponent
   ]
 })
 export class PollSharedModule {

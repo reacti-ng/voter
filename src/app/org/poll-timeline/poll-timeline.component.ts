@@ -23,12 +23,8 @@ export class OrgPollTimelineComponent {
   readonly current$: Observable<Org | undefined> = this.store.pipe(
     select(createSelector(OrgState.fromRoot, OrgState.current))
   );
-
-  readonly orgPollPagination$: Observable<PageCursorPagination<Poll> | undefined> = this.current$.pipe(
-    map(org => org && this.orgService.orgPollTimeline(org))
-  );
-  readonly orgPolls$ = this.orgPollPagination$.pipe(
-    switchMap(pagination => pagination ? pagination.results$ : EMPTY)
+  readonly pollFilters$ = this.current$.pipe(
+    map(org => org && {org: org.id})
   );
 
 }

@@ -7,6 +7,7 @@ import {Ident} from '../common/model/ident.model';
 
 export interface Poll {
   readonly id: string;
+  readonly name: string;
 
   readonly ballot: ModelRef<Ballot>;
 
@@ -17,12 +18,17 @@ export interface Poll {
 
   // Only visible in full poll details
   readonly ballotIssuerId?: string;
-
 }
 
 export const Poll = {
   fromJson: (json: JsonObject) => JsonObject.fromJson<Poll>({
     id: () => Ident.fromJson(json).id,
+    name: ({name}) => {
+      if (typeof name !== 'string') {
+        throw new Error('JSON poll has no \'name\' (${poll})');
+      }
+      return name;
+    },
     createAt: ({create_at}) => {
       if (typeof create_at !== 'string') {
         throw new Error('JSON has no date-like \'created_at\'');

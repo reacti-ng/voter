@@ -30,7 +30,7 @@ export class UpsertOrgs {
   constructor(readonly orgs: Set<Org>) {}
 }
 
-export const SET_ORG_PAGE_SUBJECT = 'features.org: set page subject';
+export const SET_ORG_PAGE_SUBJECT = 'features.org: set features subject';
 export class SetOrgPageSubject {
   readonly type = SET_ORG_PAGE_SUBJECT;
   constructor(readonly org: ModelRef<Org>) {}

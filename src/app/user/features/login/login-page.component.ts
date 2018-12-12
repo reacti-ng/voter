@@ -14,11 +14,11 @@ import {AuthService} from '../../../common/auth/auth.service';
 import {isNotUndefined} from '../../../common/common.types';
 
 /**
- * Login page for a resource owner of the application.
+ * Login features for a resource owner of the application.
  *
  * Once the resource owner grant has been issued, the
- * page will request an authorization code and then
- * redirect the page to the predeterimined redirect uri
+ * features will request an authorization code and then
+ * redirect the features to the predeterimined redirect uri
  */
 @Component({
   selector: 'app-user-login-page',

@@ -1,6 +1,6 @@
 import {Routes} from '@angular/router';
-import {OrgMembershipPageComponent} from './page/membership/membership.component';
-import {OrgMemberDetailsPageComponent} from './page/member-details/member-details.component';
+import {OrgMembershipPageComponent} from './features/membership/membership.component';
+import {OrgMemberDetailsPageComponent} from './features/member-details/member-details.component';
 
 
 export const orgRoutes: Routes = [

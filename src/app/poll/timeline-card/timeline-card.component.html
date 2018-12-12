@@ -1,0 +1,18 @@
+
+
+<div class="card" *ngIf="poll">
+  <h5 class="card-title">
+    {{poll.name}}
+  </h5>
+  <h6 class="card-subtitle">0x{{poll.id}}</h6>
+  <div class="card-body">
+
+  </div>
+  <ul class="list-group list-group-flush">
+    <li class="list-group-item"><em>created at</em><div class="float-right">{{poll.createdAt | date}}</div></li>
+    <li class="list-group-item"><em>voted at</em><div class="float-right">{{poll.voteAt | date}}</div></li>
+    <li class="list-group-item"><em>counted at</em><div class="float-right">{{poll.countedAt | date}}</div></li>
+  </ul>
+</div>
+
+

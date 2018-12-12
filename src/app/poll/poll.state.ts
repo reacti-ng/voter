@@ -3,7 +3,6 @@ import {createEntityAdapter, EntityState} from '@ngrx/entity';
 import {Poll} from './poll.model';
 import {ADD_MANY_POLLS, ADD_POLL, PollAction} from './poll.action';
 
-
 export interface PollState extends EntityState<Poll> {
 }
 

@@ -7,8 +7,11 @@ import {ModelService} from '../common/model/model.service';
 import {User} from './user.model';
 import {CoreState} from '../core/core.state';
 import {UserState} from './user.state';
-import {AddManyUsers, AddUser} from './user.actions';
+import {AddManyUsers, AddUser, SetLoginUserId} from './user.actions';
 import {PaginatedResponseFactory} from '../common/model/pagination.service';
+import {Observable} from 'rxjs';
+import {fromJson} from '../common/json/from-json.operator';
+import {tap} from 'rxjs/operators';
 
 
 @Injectable()
@@ -25,13 +28,19 @@ export class UserService extends ModelService<User> {
     super(http, pagination);
   }
 
-  protected addEntity(entity: User): void {
+  addEntity(entity: User): void {
     this.store.dispatch(new AddUser(entity));
 
   }
 
-  protected addManyEntities(entities: Set<User>): void {
+  addManyEntities(entities: Set<User>): void {
     this.store.dispatch(new AddManyUsers(entities));
+  }
+
+  getLoginUser(): Observable<User> {
+    return this.http.post('/api/user/$implicit', {}).pipe(
+      fromJson({ifObj: User.fromJson})
+    );
   }
 
 }
