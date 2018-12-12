@@ -1,13 +1,27 @@
-import {Actions, Effect, ofType} from '@ngrx/effects';
 import {Inject, Injectable} from '@angular/core';
-import {AuthService} from './auth.service';
-import {concatMap, distinctUntilKeyChanged, first, mapTo, switchMap, switchMapTo, tap} from 'rxjs/operators';
-import {BEGIN_LOGIN, REFRESH_TOKEN, SET_AUTH_TOKEN, SetAuthToken, StoreAuthToken} from './auth.actions';
-import {differenceInSeconds, isAfter} from 'date-fns';
 import {DOCUMENT} from '@angular/common';
-import {AUTH_STATE_SELECTOR, AuthState} from './auth.state';
-import {createSelector, select, Selector, Store} from '@ngrx/store';
+
+import {differenceInSeconds, isAfter} from 'date-fns';
+
 import {combineLatest, EMPTY, timer} from 'rxjs';
+import {concatMap, distinctUntilKeyChanged, mapTo, switchMap, tap} from 'rxjs/operators';
+
+import {createSelector, select, Selector, Store} from '@ngrx/store';
+import {Actions, Effect, ofType} from '@ngrx/effects';
+
+import {AuthService} from './auth.service';
+import {
+  BEGIN_AUTHORIZATION_CODE_GRANT,
+  BeginAuthorizationCodeGrant,
+  FINALIZE_AUTHRORIZATION_CODE_GRANT,
+  FinalizeAuthorizationCodeGrant,
+  REFRESH_TOKEN,
+  SET_AUTH_TOKEN,
+  SetAuthToken,
+  StoreAuthToken
+} from './auth.actions';
+import {AUTH_STATE_SELECTOR, AuthState} from './auth.state';
+import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
 
 
 @Injectable()
@@ -26,20 +40,32 @@ export class AuthEffects {
     select(createSelector(this.authStateSelector, AuthState.selectTokenExpiresAt))
   );
 
+  // Every time the auth token is set,
   readonly storeAccessTokenOnSete$ = this.action$.pipe(
     ofType<SetAuthToken>(SET_AUTH_TOKEN),
     concatMap((action) => [action, new StoreAuthToken()])
   );
 
-
   @Effect({dispatch: false})
-  readonly redirectToLoginPage$ = this.action$.pipe(
-    ofType(BEGIN_LOGIN),
-    switchMapTo(this.authService.loginPageUri$.pipe(first())),
-    tap(loginPageHref => {
+  readonly beginAuthorizationCodeGrantFlow$ = this.action$.pipe(
+    ofType<BeginAuthorizationCodeGrant>(BEGIN_AUTHORIZATION_CODE_GRANT),
+    tap(action => {
+      const httpParams = AuthorizationCodeGrantRequest.toHttpParams(action.request);
       const window = this.document.defaultView;
       if (window) {
-        window.location.href = loginPageHref;
+        window.location.href = `/login?${httpParams}`;
+      }
+    })
+  );
+
+  @Effect({dispatch: false})
+  readonly finalizeAuthorizationCodeGrantFlow$ = this.action$.pipe(
+    ofType<FinalizeAuthorizationCodeGrant>(FINALIZE_AUTHRORIZATION_CODE_GRANT),
+    tap(action => {
+      const httpParams = AuthorizationCodeGrantResponse.toHttpParams(action.response);
+      const window = this.document.defaultView;
+      if (window) {
+        window.location.href = `${action.redirectUri}${httpParams}`;
       }
     })
   );

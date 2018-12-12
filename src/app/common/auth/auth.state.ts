@@ -1,6 +1,6 @@
 import {OAuth2Token} from './oauth2-token.model';
 import {
-  BEGIN_LOGIN,
+  BEGIN_AUTHORIZATION_CODE_GRANT,
   isAuthAction,
   SET_AUTH_TOKEN,
   SET_LOGIN_REDIRECT, SET_TOKEN_PERSISTENCE_IS_ENABLED
@@ -8,6 +8,7 @@ import {
 import {InjectionToken} from '@angular/core';
 import {Action, createSelector, Selector} from '@ngrx/store';
 import {addSeconds} from 'date-fns';
+import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
 
 
 export interface AuthState {
@@ -20,6 +21,7 @@ export interface AuthState {
   // Should the access token persist across user sessions?
   readonly isTokenPersistenceEnabled: boolean;
 
+  readonly authCodeGrantInProgress?: AuthorizationCodeGrantRequest | AuthorizationCodeGrantResponse;
 }
 
 export const AUTH_STATE_SELECTOR = new InjectionToken<Selector<object, AuthState>>('AUTH_STATE_SELECTOR');
@@ -30,6 +32,7 @@ export const AuthState = {
     refreshedAt: new Date(Date.now()),
     isTokenPersistenceEnabled: false
   },
+  selectToken: (authState: AuthState) => authState.token,
   selectAccessToken: (authState: AuthState) => authState.token && authState.token.accessToken,
 
   selectTokenRefreshedAt: createSelector(
@@ -59,7 +62,7 @@ export function reduceAuthState(state: AuthState = AuthState.initial, action: Ac
       };
     case SET_LOGIN_REDIRECT:
       return {...state, loginRedirectTo: action.redirectTo};
-    case BEGIN_LOGIN:
+    case BEGIN_AUTHORIZATION_CODE_GRANT:
       return {
         ...state,
         token: undefined,

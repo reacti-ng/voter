@@ -1,6 +1,5 @@
 import {Inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
-import {Router} from '@angular/router';
 import {APP_BASE_HREF} from '@angular/common';
 import * as uuid from 'uuid';
 import {Observable, of} from 'rxjs';
@@ -10,6 +9,7 @@ import {AUTH_STATE_SELECTOR, AuthState} from './auth.state';
 import {createSelector, select, Selector, Store} from '@ngrx/store';
 import {AUTH_SERVICE_CONFIG, AuthServiceConfig} from './auth-config.model';
 import {fromJson} from '../json/from-json.operator';
+import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
 
 @Injectable()
 export class AuthService {
@@ -18,12 +18,15 @@ export class AuthService {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly router: Router,
     private readonly store: Store<object>,
     @Inject(AUTH_STATE_SELECTOR) private readonly authSelector: Selector<object, AuthState>,
     @Inject(APP_BASE_HREF) private readonly appBaseHref: string,
     @Inject(AUTH_SERVICE_CONFIG) private readonly authConfig: AuthServiceConfig
   ) {}
+
+  readonly token$ = this.store.pipe(
+    select(createSelector(this.authSelector, AuthState.selectToken))
+  );
 
   readonly accessToken$ = this.store.pipe(
     select(createSelector(this.authSelector, AuthState.selectAccessToken))
@@ -83,9 +86,9 @@ export class AuthService {
     );
   }
 
-  exchangeResourceOwnerGrantForAuthCode(credentials: OAuth2Token): Observable<string> {
-    // FIXME
-    return of(credentials.accessToken);
+  getAuthorizationCodeForClientId(request: AuthorizationCodeGrantRequest): Observable<AuthorizationCodeGrantResponse> {
+    // FIXME: Serverside stuff.
+    return of({code: request.clientId, state: request.state});
   }
 
   submitResourceOwnerCredentialsGrantRequest(
