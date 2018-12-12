@@ -1,5 +1,6 @@
 
 import {List} from 'immutable';
+import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {BehaviorSubject, Observable, of, throwError} from 'rxjs';
 import {filter, first, map, shareReplay, switchMap} from 'rxjs/operators';
@@ -9,6 +10,7 @@ import {JsonObject} from '../json/json.model';
 
 import {CursorPageResponse, NumberedPageResponse, PaginationType, SimplePageResponse} from './http-response.model';
 
+@Injectable()
 export class PaginatedResponseFactory<T> {
   constructor(readonly http: HttpClient) {}
 

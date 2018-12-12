@@ -1,6 +1,7 @@
 /**
  * A CommonAuthUser
  */
+import {Set} from 'immutable';
 import {isNumber, isString, notAStringError} from '../common.types';
 import {JsonObject} from '../json/json.model';
 
@@ -10,7 +11,7 @@ export interface OAuth2Token {
   readonly tokenType: 'bearer';
   readonly expiresIn: number;
   readonly refreshToken: string;
-  readonly scope: string;
+  readonly scope: Set<string>;
 }
 
 function oauth2TokenFromJson(json: JsonObject): OAuth2Token {
@@ -38,7 +39,7 @@ function oauth2TokenFromJson(json: JsonObject): OAuth2Token {
       if (!isString(scope)) {
         throw new Error(`Expected scope to be a string`);
       }
-      return scope;
+      return Set(scope.split(' '));
     }
   }, json);
 }
@@ -50,7 +51,7 @@ export const OAuth2Token = {
       access_token: token.accessToken,
       expires_in: token.expiresIn,
       refresh_token: token.refreshToken,
-      scope: token.scope
+      scope: token.scope.join(' ')
     };
   },
   fromJson: oauth2TokenFromJson

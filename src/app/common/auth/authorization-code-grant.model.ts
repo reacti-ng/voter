@@ -2,6 +2,7 @@ import {Set} from 'immutable';
 import {ParamMap} from '@angular/router';
 import {Mutable, notAStringError} from '../common.types';
 import {HttpParams} from '@angular/common/http';
+import {Observable} from 'rxjs';
 
 /**
  * These query parameters are passed to the login component via the
@@ -25,6 +26,7 @@ export interface AuthorizationCodeGrantRequest {
   // State encoded in the application. Must match the browser fingerprint of the page.
   readonly state: string;
 }
+
 
 export const AuthorizationCodeGrantRequest = {
   fromQueryParams: (params: ParamMap) => {
@@ -51,6 +53,7 @@ export const AuthorizationCodeGrantRequest = {
   toHttpParams: (request: AuthorizationCodeGrantRequest) => {
     return new HttpParams({
       fromObject: {
+        response_type: 'code',
         redirect_uri: request.redirectUri,
         client_id: request.clientId,
         scope: request.scope.join(' '),
