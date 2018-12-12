@@ -1,15 +1,21 @@
+import {Set} from 'immutable';
+import * as uuid from 'uuid';
+
 import {Inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {APP_BASE_HREF} from '@angular/common';
-import * as uuid from 'uuid';
-import {Observable, of} from 'rxjs';
-import {OAuth2Token} from './oauth2-token.model';
-import {first, flatMap, map} from 'rxjs/operators';
-import {AUTH_STATE_SELECTOR, AuthState} from './auth.state';
+
 import {createSelector, select, Selector, Store} from '@ngrx/store';
+
+import {Observable, of} from 'rxjs';
+import {first, flatMap, map} from 'rxjs/operators';
+
+import {OAuth2Token} from './oauth2-token.model';
+import {AUTH_STATE_SELECTOR, AuthState} from './auth.state';
 import {AUTH_SERVICE_CONFIG, AuthServiceConfig} from './auth-config.model';
 import {fromJson} from '../json/from-json.operator';
 import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
+import {BeginAuthorizationCodeGrant} from './auth.actions';
 
 @Injectable()
 export class AuthService {
@@ -45,18 +51,20 @@ export class AuthService {
    * The full URI (including mandatory query params for an oauth authorization code
    * grant page)
    */
-  readonly loginPageUri$: Observable<string> = this.loginRedirectUri$.pipe(
-    map(loginRedirectUri => new HttpParams({
-      fromObject: {
-        response_type: 'code',
-        client_id: this.authConfig.clientId,
-        redirect_uri: loginRedirectUri,
-        scope: this.authConfig.requireScopes.join(' '),
-        state: this.state
-      }
-    })),
-    map(loginParams => `${this.authConfig.authServerHref}/login?${loginParams.toString()}`)
+  readonly authorizationCodeGrantRequest$ = this.loginRedirectUri$.pipe(
+    map(loginRedirectUri => ({
+      clientId: this.authConfig.clientId,
+      redirectUri: loginRedirectUri,
+      scope: Set(this.authConfig.requireScopes),
+      state: this.state
+    }))
   );
+
+  login(): void {
+    this.authorizationCodeGrantRequest$.pipe(first()).subscribe((request) => {
+      this.store.dispatch(new BeginAuthorizationCodeGrant(request));
+    });
+  }
 
   /**
    * Exchange the authorization code for an access token.
