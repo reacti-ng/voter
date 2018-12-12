@@ -1,0 +1,6 @@
+<ul *ngIf="orgPolls$ | async as orgPolls">
+  <li *ngFor="let orgPoll of orgPolls">
+    <app-poll-list-item [poll]="orgPoll"></app-poll-list-item>
+  </li>
+</ul>
+
