@@ -1,0 +1,11 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand">Voter</a>
+
+  <div *ngIf="loginUser$ | async as loginUser; else publicMain">
+
+  </div>
+</nav>
+
+<ng-template #publicMain>
+  <ul class="navbar-nav"></ul>
+</ng-template>
