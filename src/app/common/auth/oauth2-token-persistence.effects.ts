@@ -47,7 +47,7 @@ export class Oauth2TokenPersistenceEffects {
   readonly enableTokenPersistenceOnLoad$ = defer(() => {
     return this.ifHasWindow((window) => {
       const isEnabled = window.localStorage.getItem(TOKEN_PERSISTENCE_ENABLED_STORAGE_KEY) === 'true';
-      return of(new SetTokenPersistenceIsEnabled('login', isEnabled));
+      return of(new SetTokenPersistenceIsEnabled(isEnabled, {app: 'login'}));
     }) || EMPTY;
   });
 
@@ -100,7 +100,7 @@ export class Oauth2TokenPersistenceEffects {
       return of({token, timestamp});
     }) || EMPTY;
   }).pipe(
-    map(({token, timestamp}) => new SetAuthToken('login', token, new Date(timestamp)))
+    map(({token, timestamp}) => new SetAuthToken(token, {useTimestamp: new Date(timestamp), app: 'login'}))
   );
 
   private ifHasWindow<T>(action: (window: Window) => T | null): T | null {

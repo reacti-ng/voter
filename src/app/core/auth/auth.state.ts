@@ -2,30 +2,24 @@ import {ApplicationState, reduceApplicationState} from '../../common/auth/applic
 import {Action, ActionReducerMap, createSelector} from '@ngrx/store';
 import {AuthAction, isAuthAction} from '../../common/auth/auth.actions';
 import {AuthState} from '../../common/auth/auth.state';
-import {isCoreAuthAction} from './auth.actions';
 
 
 export interface CoreAuthState {
-  active: keyof CoreAuthState | undefined;
-
-  __public__: ApplicationState,
+  __public__: ApplicationState;
   login: ApplicationState;
+  org: ApplicationState;
 }
 
 const initial: CoreAuthState = {
-  active: undefined,
   __public__: ApplicationState.initial('__public__'),
-  login: ApplicationState.initial('login')
+  login: ApplicationState.initial('login'),
+  org: ApplicationState.initial('org')
 };
 
 export const CoreAuthState = {
-  selectActiveApp: createSelector((authState: CoreAuthState) => authState.active && authState[authState.active])
 };
 
 export function reduceAuthState(state: CoreAuthState = initial, action: Action): CoreAuthState {
-  if (isCoreAuthAction(action)) {
-    return { ...state, active: action.app };
-  }
   if (isAuthAction(action)) {
     const appKey = action.app as keyof CoreAuthState;
     const appState = state[appKey];

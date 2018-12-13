@@ -33,7 +33,7 @@ import {AUTH_STATE_SELECTOR} from '../common/auth/auth.state';
     HttpClientModule,
     RouterModule.forRoot(coreRoutes, {enableTracing: !environment.production}),
 
-    CommonAuthModule.forRoot(environment.authConfigs),
+    CommonAuthModule.forRoot(environment.authDefaultAppId, environment.authConfigs),
     ContainerModule,
     UserModule.forRoot(),
     PollSharedModule.forRoot(),
@@ -43,7 +43,7 @@ import {AUTH_STATE_SELECTOR} from '../common/auth/auth.state';
     {provide: APP_BASE_HREF, useValue: environment.appBaseHref },
     {provide: API_BASE_HREF, useValue: environment.apiBaseHref },
     {provide: CONTROLS_STATE_SELECTOR , useValue: selectControlsState},
-    {provide: AUTH_STATE_SELECTOR, useValue: selectAuthState}
+    {provide: AUTH_STATE_SELECTOR, useValue: selectAuthState},
   ],
   exports: [
     ContainerModule,

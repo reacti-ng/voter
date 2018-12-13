@@ -1,8 +1,7 @@
 import {OAuth2Token} from './oauth2-token.model';
 import {
   AuthAction,
-  BEGIN_AUTHORIZATION_CODE_GRANT,
-  isAuthAction,
+  AUTHORIZATION_CODE_GRANT_BEGIN, AUTHORIZATION_CODE_GRANT_REDIRECT, AUTHORIZATION_CODE_GRANT_TOKEN_EXCHANGE,
   SET_AUTH_TOKEN,
   SET_LOGIN_REDIRECT, SET_TOKEN_PERSISTENCE_IS_ENABLED
 } from './auth.actions';
@@ -50,7 +49,8 @@ export const ApplicationState = {
       const expiresAt = expiresIn && addSeconds(refreshedAt, expiresIn) || new Date(Date.now());
       return [token, expiresAt] as [OAuth2Token, Date];
     }
-  )
+  ),
+  isAuthCodeGrantInProgress: (authState: ApplicationState) => authState.authCodeGrantInProgress !== undefined
 };
 
 export function reduceApplicationState(state: ApplicationState, action: AuthAction): ApplicationState {
@@ -59,16 +59,22 @@ export function reduceApplicationState(state: ApplicationState, action: AuthActi
       return {
         ...state,
         token: action.token,
-        refreshedAt: action.useTimestamp ? action.useTimestamp : new Date(Date.now())
+        refreshedAt: action.useTimestamp ? action.useTimestamp : new Date(Date.now()),
+        authCodeGrantInProgress: undefined
       };
     case SET_LOGIN_REDIRECT:
       return {...state, loginRedirectTo: action.redirectTo};
-    case BEGIN_AUTHORIZATION_CODE_GRANT:
+    case AUTHORIZATION_CODE_GRANT_BEGIN:
       return {
         ...state,
         token: undefined,
-        refreshedAt: new Date(Date.now())
+        refreshedAt: new Date(Date.now()),
+        authCodeGrantInProgress: action.request
       };
+    case AUTHORIZATION_CODE_GRANT_REDIRECT:
+      return {...state, authCodeGrantInProgress: action.response};
+    case AUTHORIZATION_CODE_GRANT_TOKEN_EXCHANGE:
+      return {...state, authCodeGrantInProgress: action.response};
     case SET_TOKEN_PERSISTENCE_IS_ENABLED:
       return {...state, isTokenPersistenceEnabled: action.isEnabled};
     default:

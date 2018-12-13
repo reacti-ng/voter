@@ -2,7 +2,7 @@ import * as uuid from 'uuid';
 import {InjectionToken} from '@angular/core';
 import {EMPTY, Observable, of} from 'rxjs';
 import {ApplicationState} from './application.state';
-import {AuthorizationCodeGrantRequest} from './authorization-code-grant.model';
+import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
 import {HttpClient, HttpParams, HttpRequest} from '@angular/common/http';
 import {OAuth2Token} from './oauth2-token.model';
 import {fromJson} from '../json/from-json.operator';
@@ -25,9 +25,10 @@ export interface ResourceOwnerPasswordGrantApplicationConfig {
 export interface AuthorizationCodeGrantApplicationConfig {
   readonly type: 'authorization-code-grant';
   readonly tokenUrl: string;
-  readonly apiUrlRegex: RegExp;
+  readonly apiUrlRegex: string;
   readonly clientId: string;
-  readonly clientSecret: string;
+  readonly clientSecret?: undefined;
+  readonly scope: string;
 }
 
 export type AuthApplicationConfig
@@ -39,14 +40,19 @@ export type AuthApplicationConfigs<CoreAuthState> = Record<keyof CoreAuthState, 
 export const AUTH_APPLICATION_CONFIGS = new InjectionToken<AuthApplicationConfigs<any>>('AUTH_SERVICE_CONFIGS');
 
 export abstract class ApplicationBase {
+  abstract readonly type: 'public' | 'password' | 'authorization-code-grant';
   abstract readonly http: HttpClient;
   abstract readonly name: string;
   abstract readonly config: AuthApplicationConfig;
   abstract readonly state$: Observable<ApplicationState>;
 
+  get loginRedirectUri$() {
+    return this.state$.pipe(map(state => state.loginRedirectTo));
+  }
+
   getAuthorizeHeaders(request: HttpRequest<any>): Observable<{[k: string]: string} | undefined> {
     let headers$ = of<{[k: string]: string} | undefined>(undefined);
-    const urlRegex = this.config.apiUrlRegex;
+    const urlRegex = new RegExp(this.config.apiUrlRegex || /.*/);
     if (urlRegex && urlRegex.test(request.url)) {
       headers$ = this.state$.pipe(
         first(),
@@ -88,7 +94,7 @@ export class ResourceOwnerPasswordGrantApplication extends ApplicationBase {
    */
   requestAuthorizationCodeForClientId(request: AuthorizationCodeGrantRequest) {
     // FIXME: Server-side stuff.
-    return of({code: request.clientId, state: request.state});
+    return of({code: uuid.v4().substr(28), state: request.state});
   }
 
   requestGrant(credentials: {username: string, password: string}): Observable<OAuth2Token> {
@@ -125,7 +131,7 @@ export class AuthorizationCodeGrantApplication extends ApplicationBase {
     super();
   }
 
-  exchangeAuthCodeForToken(authCode: string, stateParam: string | null): Observable<OAuth2Token> {
+  exchangeAuthCodeForToken(response: AuthorizationCodeGrantResponse): Observable<OAuth2Token> {
     return this.state$.pipe(
       first(),
       map(state => state.loginRedirectTo),
@@ -133,7 +139,7 @@ export class AuthorizationCodeGrantApplication extends ApplicationBase {
         const grantRequest = new HttpParams({
           fromObject: {
             grant_type: 'authorization_code',
-            code: authCode,
+            code: response.code,
             redirect_uri: redirectUri,
             client_id: this.config.clientId
           }
@@ -165,3 +171,5 @@ export type AuthApplication
   = PublicGrantApplication
   | ResourceOwnerPasswordGrantApplication
   | AuthorizationCodeGrantApplication;
+
+export const AUTH_DEFAULT_APPLICATION = new InjectionToken<string>('AUTH_DEFAULT_APPLICATION');

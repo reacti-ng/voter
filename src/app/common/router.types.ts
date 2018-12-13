@@ -3,17 +3,9 @@ import {Observable} from 'rxjs';
 
 
 export interface RouterData {
-  /**
-   * Indicates whether the page is a login redirect page.
-   *
-   * Login pages can accept a `code` and `state` query parameters,
-   * which encode an authorization token which is stored as the login
-   * user access token.
-   *
-   * The auth guard will immediately redirect to a version of this page
-   * with those query parameters removed from the query string.
-   */
-  readonly isLoginRedirectPage?: boolean;
+  'common.auth'?: {
+    readonly app?: string
+  };
 }
 
 export const RouterData = {

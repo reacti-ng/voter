@@ -1,45 +1,50 @@
 import {Inject, Injectable} from '@angular/core';
 import {createSelector, select, Selector, Store} from '@ngrx/store';
-import {ActivatedRouteSnapshot, CanActivate, RouterStateSnapshot} from '@angular/router';
+import {ActivatedRouteSnapshot, CanActivate, CanActivateChild, RouterStateSnapshot} from '@angular/router';
 import {ApplicationState} from './application.state';
-import {first, map} from 'rxjs/operators';
-import {Observable} from 'rxjs';
+import {filter, first, map, mapTo, skip, switchMap, tap, timeout} from 'rxjs/operators';
+import {Observable, of, race, zip} from 'rxjs';
 import {OAuth2Token} from './oauth2-token.model';
 import {AuthService} from './auth.service';
 import {RouterData} from '../router.types';
 import {AUTH_STATE_SELECTOR} from './auth.state';
+import {AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
+import {AuthApplication} from './application.model';
+import {AuthorizationCodeGrantTokenExchange} from './auth.actions';
 
 
 @Injectable()
-export class IsAuthorizedGuard implements CanActivate {
+export class IsAuthorizedGuard implements CanActivate, CanActivateChild {
   constructor(
+    readonly store: Store<any>,
     readonly authService: AuthService<any>,
-    readonly store: Store<object>,
-    @Inject(AUTH_STATE_SELECTOR) readonly authStateSelector: Selector<object, ApplicationState>
   ) {}
 
-  readonly accessToken$ = this.store.pipe(
-    select(createSelector(this.authStateSelector, (authState => authState.token)))
-  );
+  appForRouteData(data: RouterData) {
+    const authData = data['common.auth'];
+    return this.authService.appForKey(authData && authData.app);
+  }
 
   canActivate(snapshot: ActivatedRouteSnapshot) {
-    let accessToken$: Observable<OAuth2Token | undefined> | undefined;
     const data = RouterData.fromActivatedRouteSnapshot(snapshot);
+    const app = this.appForRouteData(data);
 
-    // If the page can be a target of a redirect of a login, check for the 'code' and 'state' parameters
-    // in the snapshot. If they're present, it means that this page was entered via a redirect from
-    // the core server. Finalize the login process before activating the route.
-    if (data.isLoginRedirectPage) {
-      const authCode = snapshot.paramMap.get('code');
-      if (authCode !== null) {
-        /* FIXME: code and state params needed to be loaded of redirect routes now that multiple tokens */
-        // accessToken$ = this.authService.exchangeAuthCodeForToken(authCode, snapshot.paramMap.get('state'));
-      }
-    }
-    if (!accessToken$) {
-      accessToken$ = this.accessToken$.pipe(first());
+    const authGrantResponse = AuthorizationCodeGrantResponse.fromQueryParams(snapshot.queryParamMap);
+    if (authGrantResponse != null) {
+      this.store.dispatch(new AuthorizationCodeGrantTokenExchange(authGrantResponse, {app: app.name}));
     }
 
-    return accessToken$.pipe(map(accessToken => accessToken !== undefined));
+    return zip(
+      app.state$.pipe(select(ApplicationState.selectAccessToken)),
+      app.state$.pipe(select(ApplicationState.isAuthCodeGrantInProgress))
+    ).pipe(
+      filter(([_, isGrantInProgress]) => !isGrantInProgress),
+      map(([token, _]) => token !== undefined),
+      first()
+    );
+  }
+
+  canActivateChild(childRoute: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
+    return this.canActivate(childRoute);
   }
 }
