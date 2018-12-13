@@ -1,14 +1,14 @@
-import {Component, Inject, OnDestroy} from '@angular/core';
+import {Component, Inject, OnDestroy, OnInit} from '@angular/core';
 import {DOCUMENT} from '@angular/common';
 import {HttpResponse} from '@angular/common/http';
 import {FormControl, FormGroup, Validators} from '@angular/forms';
 import {ActivatedRoute} from '@angular/router';
 import {Store} from '@ngrx/store';
 
-import {of, throwError} from 'rxjs';
-import {catchError, filter, map, shareReplay, switchMap, tap} from 'rxjs/operators';
+import {of, Subscription, throwError} from 'rxjs';
+import {catchError, distinctUntilChanged, filter, first, map, shareReplay, switchMap, switchMapTo, tap} from 'rxjs/operators';
 
-import {FinalizeAuthorizationCodeGrant, SetAuthToken, SetTokenPersistenceIsEnabled} from '../../../common/auth/auth.actions';
+import {AuthorizationCodeGrantRedirect, SetAuthToken, SetTokenPersistenceIsEnabled} from '../../../common/auth/auth.actions';
 import {AuthorizationCodeGrantRequest} from '../../../common/auth/authorization-code-grant.model';
 import {AuthService} from '../../../common/auth/auth.service';
 import {isNotUndefined} from '../../../common/common.types';
@@ -28,7 +28,7 @@ import {ResourceOwnerPasswordGrantApplication} from '../../../common/auth/applic
     './login-page.component.scss'
   ]
 })
-export class UserLoginPageComponent implements OnDestroy {
+export class UserLoginPageComponent implements OnInit, OnDestroy {
   readonly app: ResourceOwnerPasswordGrantApplication;
 
   constructor(
@@ -49,22 +49,21 @@ export class UserLoginPageComponent implements OnDestroy {
     shareReplay(1)
   );
   private codeGrantRequestSubscription = this.codeGrantRequest$.subscribe();
-
-  readonly redirectOnLoginSubscription = this.app.state$.pipe(
+  private redirectOnLoginSubscription = this.app.state$.pipe(
     map(state => state.token),
     filter(isNotUndefined),
+    distinctUntilChanged(),
+    switchMapTo(this.codeGrantRequest$.pipe(first())),
     // When we have a successful login, generate an auth token for the requested client id
     switchMap((request: AuthorizationCodeGrantRequest) => {
       return this.app.requestAuthorizationCodeForClientId(request).pipe(
-        map((response) => ({clientId: request.clientId, redirectUri: request.redirectUri, response}))
+        map((response) => ({redirectUri: request.redirectUri, response}))
       );
     })
-  ).subscribe(({clientId, redirectUri, response}) => {
-    const app = this.authService.appForClientId(clientId);
-    this.store.dispatch(new FinalizeAuthorizationCodeGrant(app.name, redirectUri, response));
+  ).subscribe(({redirectUri, response}) => {
+    console.log('issuing redirect to', redirectUri, response);
+    this.store.dispatch(new AuthorizationCodeGrantRedirect(redirectUri, response, {app: 'login'}));
   });
-
-
   readonly resourceOwnerCredentialsForm = new FormGroup({
     username: new FormControl('', [Validators.required]),
     password: new FormControl('', [Validators.required])
@@ -72,7 +71,7 @@ export class UserLoginPageComponent implements OnDestroy {
 
   readonly rememberMeControl = new FormControl(false);
   private readonly rememberMeSubscription = this.rememberMeControl.valueChanges.subscribe(
-    rememberMe => this.store.dispatch(new SetTokenPersistenceIsEnabled('login', rememberMe))
+    rememberMe => this.store.dispatch(new SetTokenPersistenceIsEnabled(rememberMe, {app: 'login'}))
   );
 
   ngOnDestroy() {
@@ -86,7 +85,7 @@ export class UserLoginPageComponent implements OnDestroy {
     const credentials = this.resourceOwnerCredentialsForm.value as {username: string, password: string};
     this.app.requestGrant(credentials).pipe(
       tap((authToken) => {
-        this.store.dispatch(new SetAuthToken('login', authToken));
+        this.store.dispatch(new SetAuthToken(authToken, {app: 'login'}));
       }),
       catchError((err) => {
         if (err instanceof HttpResponse) {
