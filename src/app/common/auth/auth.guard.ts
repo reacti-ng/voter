@@ -1,20 +1,21 @@
 import {Inject, Injectable} from '@angular/core';
 import {createSelector, select, Selector, Store} from '@ngrx/store';
 import {ActivatedRouteSnapshot, CanActivate, RouterStateSnapshot} from '@angular/router';
-import {AUTH_STATE_SELECTOR, AuthState} from './auth.state';
+import {ApplicationState} from './application.state';
 import {first, map} from 'rxjs/operators';
 import {Observable} from 'rxjs';
 import {OAuth2Token} from './oauth2-token.model';
 import {AuthService} from './auth.service';
 import {RouterData} from '../router.types';
+import {AUTH_STATE_SELECTOR} from './auth.state';
 
 
 @Injectable()
 export class IsAuthorizedGuard implements CanActivate {
   constructor(
-    readonly authService: AuthService,
+    readonly authService: AuthService<any>,
     readonly store: Store<object>,
-    @Inject(AUTH_STATE_SELECTOR) readonly authStateSelector: Selector<object, AuthState>
+    @Inject(AUTH_STATE_SELECTOR) readonly authStateSelector: Selector<object, ApplicationState>
   ) {}
 
   readonly accessToken$ = this.store.pipe(
@@ -31,7 +32,8 @@ export class IsAuthorizedGuard implements CanActivate {
     if (data.isLoginRedirectPage) {
       const authCode = snapshot.paramMap.get('code');
       if (authCode !== null) {
-        accessToken$ = this.authService.exchangeAuthCodeForToken(authCode, snapshot.paramMap.get('state'));
+        /* FIXME: code and state params needed to be loaded of redirect routes now that multiple tokens */
+        // accessToken$ = this.authService.exchangeAuthCodeForToken(authCode, snapshot.paramMap.get('state'));
       }
     }
     if (!accessToken$) {

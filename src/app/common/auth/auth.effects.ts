@@ -4,7 +4,7 @@ import {DOCUMENT} from '@angular/common';
 import {differenceInSeconds, isAfter} from 'date-fns';
 
 import {combineLatest, EMPTY, timer} from 'rxjs';
-import {concatMap, distinctUntilKeyChanged, mapTo, switchMap, tap} from 'rxjs/operators';
+import {concatMap, distinctUntilKeyChanged, map, mapTo, switchMap, tap} from 'rxjs/operators';
 
 import {createSelector, select, Selector, Store} from '@ngrx/store';
 import {Actions, Effect, ofType} from '@ngrx/effects';
@@ -15,12 +15,10 @@ import {
   BeginAuthorizationCodeGrant,
   FINALIZE_AUTHRORIZATION_CODE_GRANT,
   FinalizeAuthorizationCodeGrant,
-  REFRESH_TOKEN,
   SET_AUTH_TOKEN,
   SetAuthToken,
   StoreAuthToken
 } from './auth.actions';
-import {AUTH_STATE_SELECTOR, AuthState} from './auth.state';
 import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
 
 
@@ -30,20 +28,14 @@ export class AuthEffects {
   constructor(
     readonly action$: Actions,
     readonly store: Store<object>,
-    @Inject(AUTH_STATE_SELECTOR)
-    readonly authStateSelector: Selector<object, AuthState>,
-    readonly authService: AuthService,
+    readonly authService: AuthService<any>,
     @Inject(DOCUMENT) readonly document: Document,
   ) {}
 
-  readonly accessTokenExpiresAt$ = this.store.pipe(
-    select(createSelector(this.authStateSelector, AuthState.selectTokenExpiresAt))
-  );
-
-  // Every time the auth token is set,
-  readonly storeAccessTokenOnSete$ = this.action$.pipe(
+  // Every time the auth token is set, store the token.
+  readonly storeAccessTokenOnSave$ = this.action$.pipe(
     ofType<SetAuthToken>(SET_AUTH_TOKEN),
-    concatMap((action) => [action, new StoreAuthToken()])
+    concatMap((action) => [action, new StoreAuthToken(action.app)])
   );
 
   @Effect({dispatch: false})
@@ -70,12 +62,10 @@ export class AuthEffects {
     })
   );
 
+  /* TODO: Re-enable this.
   @Effect()
-  readonly refreshToken$ = combineLatest(
-    this.action$.pipe(ofType<SetAuthToken>(REFRESH_TOKEN)),
-    this.accessTokenExpiresAt$
-  ).pipe(
-    distinctUntilKeyChanged(0),
+  readonly refreshToken$ = combineLatest(this.action$.pipe(ofType<SetAuthToken>(REFRESH_TOKEN))).pipe(
+    map(action => this.authService.apps[action.app]),
     switchMap(([_, [token, expiresAt]]) => {
       const now = new Date(Date.now());
       if (token === undefined || isAfter(expiresAt, now)) {
@@ -90,4 +80,5 @@ export class AuthEffects {
       new StoreAuthToken()
     ])
   );
+  */
 }

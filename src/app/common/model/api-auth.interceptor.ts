@@ -1,38 +1,29 @@
 import {Inject, Injectable} from '@angular/core';
 import {HttpEvent, HttpHandler, HttpInterceptor, HttpRequest} from '@angular/common/http';
 import {Observable, of} from 'rxjs';
-import {AuthService} from '../auth/auth.service';
-import {request} from 'https';
-import {AUTH_STATE_SELECTOR, AuthState} from '../auth/auth.state';
-import {createSelector, select, Selector, Store} from '@ngrx/store';
 import {API_BASE_HREF} from './api-host.interceptor';
-import {concatMap, first, flatMap, map, switchMap} from 'rxjs/operators';
+import {concatMap, flatMap, reduce} from 'rxjs/operators';
+import {AuthService} from '../auth/auth.service';
+import {fromArray} from 'rxjs/internal/observable/fromArray';
 
 
 @Injectable()
 export class ApiAuthInterceptor implements HttpInterceptor {
   constructor(
     @Inject(API_BASE_HREF) protected readonly apiBaseHref: string,
-    protected readonly store: Store<object>,
-    @Inject(AUTH_STATE_SELECTOR) protected readonly authStateSelector: Selector<object, AuthState>
+    readonly authService: AuthService<any>
   ) {}
-
-  readonly accessToken$: Observable<string | undefined> = this.store.pipe(
-    select(createSelector(this.authStateSelector, AuthState.selectAccessToken))
-  );
-
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     let authRequest$ = of(req);
-    if (req.url.startsWith('/api') || req.url.startsWith(this.apiBaseHref)) {
-      authRequest$ = this.accessToken$.pipe(
-        first(),
-        map(accessToken => req.clone({
-            setHeaders: {'Authorization': `Bearer ${accessToken}`}
-        }))
+    if (req.url.startsWith('/api') && req.headers.get('authorization') == null) {
+      authRequest$ = fromArray(this.authService.appKeys).pipe(
+        concatMap(appKey => this.authService.apps[appKey].getAuthorizeHeaders(req)),
+        reduce((request: HttpRequest<any>, authHeaders: {[k: string]: string} | undefined) => {
+          return request.clone({setHeaders: authHeaders});
+        }, req)
       );
     }
     return authRequest$.pipe(flatMap((authReq) => next.handle(authReq)));
   }
-
 }

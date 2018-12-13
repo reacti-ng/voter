@@ -6,6 +6,7 @@ import {User} from '../../../user/user.model';
 import {BeginAuthorizationCodeGrant} from '../../../common/auth/auth.actions';
 import {AuthService} from '../../../common/auth/auth.service';
 import {first} from 'rxjs/operators';
+import {CoreAuthState} from '../../auth/auth.state';
 
 
 @Component({
@@ -14,8 +15,7 @@ import {first} from 'rxjs/operators';
 })
 export class AppHeaderComponent {
   constructor(
-    readonly store: Store<any>,
-    protected readonly authService: AuthService
+    readonly store: Store<any>
   ) {}
 
   readonly loginUser$: Observable<User | undefined> = this.store.pipe(
@@ -23,6 +23,5 @@ export class AppHeaderComponent {
   );
 
   navigateToLogin() {
-    this.authService.login();
   }
 }

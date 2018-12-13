@@ -1,7 +1,7 @@
 import {ModuleWithProviders, NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {AuthService} from './auth.service';
-import {AUTH_SERVICE_CONFIG, AuthServiceConfig} from './auth-config.model';
+import {AUTH_APPLICATION_CONFIGS, AuthApplicationConfigs} from './application.model';
 
 
 @NgModule({
@@ -10,11 +10,11 @@ import {AUTH_SERVICE_CONFIG, AuthServiceConfig} from './auth-config.model';
   ]
 })
 export class CommonAuthModule {
-  static forAuthConfig(config: AuthServiceConfig): ModuleWithProviders {
+  static forRoot(configs: AuthApplicationConfigs<any>): ModuleWithProviders {
     return {
       ngModule: CommonAuthModule,
       providers: [
-        {provide: AUTH_SERVICE_CONFIG, useValue: config},
+        {provide: AUTH_APPLICATION_CONFIGS, useValue: configs},
         AuthService
       ]
     };

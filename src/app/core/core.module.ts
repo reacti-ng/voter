@@ -15,8 +15,9 @@ import {APP_BASE_HREF} from '@angular/common';
 import {UserModule} from '../user/user.module';
 import {PollSharedModule} from '../poll/poll-shared.module';
 import {OrgSharedModule} from '../org/org-shared.module';
-import {AUTH_STATE_SELECTOR} from '../common/auth/auth.state';
 import {API_BASE_HREF} from '../common/model/api-host.interceptor';
+import {CommonModelModule} from '../common/model/model.module';
+import {AUTH_STATE_SELECTOR} from '../common/auth/auth.state';
 
 @NgModule({
   imports: [
@@ -26,11 +27,13 @@ import {API_BASE_HREF} from '../common/model/api-host.interceptor';
       logOnly: environment.production
     }),
     EffectsModule.forRoot(coreEffects),
-    HttpClientModule,
 
+    // Before HttpClientModule, to register interceptors.
+    CommonModelModule.forRoot(),
+    HttpClientModule,
     RouterModule.forRoot(coreRoutes, {enableTracing: !environment.production}),
 
-    CommonAuthModule.forAuthConfig(environment.authConfig),
+    CommonAuthModule.forRoot(environment.authConfigs),
     ContainerModule,
     UserModule.forRoot(),
     PollSharedModule.forRoot(),

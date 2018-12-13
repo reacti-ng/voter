@@ -1,7 +1,7 @@
 import {Inject, Injectable} from '@angular/core';
 import {DOCUMENT} from '@angular/common';
-import {AUTH_STATE_SELECTOR, AuthState} from './auth.state';
-import {createSelector, select, Selector, Store} from '@ngrx/store';
+import {ApplicationState} from './application.state';
+import {select} from '@ngrx/store';
 import {OAuth2Token} from './oauth2-token.model';
 import {combineLatest, defer, EMPTY, of} from 'rxjs';
 import {distinctUntilKeyChanged, map, tap} from 'rxjs/operators';
@@ -14,6 +14,7 @@ import {
   StoreAuthToken,
 } from './auth.actions';
 import {JsonObject} from '../json/json.model';
+import {AuthService} from './auth.service';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'common.auth::access-token';
 const ACCESS_TOKEN_TIMESTAMP_STORAGE_KEY = 'common.auth::access-token-timestamp';
@@ -23,24 +24,30 @@ const TOKEN_PERSISTENCE_ENABLED_STORAGE_KEY = 'common.auth::is-token-persistence
 export class Oauth2TokenPersistenceEffects {
   constructor(
     readonly action$: Actions,
-    readonly store: Store<object>,
-    @Inject(AUTH_STATE_SELECTOR) readonly authStateSelector: Selector<object, AuthState>,
+    readonly authService: AuthService<any>,
     @Inject(DOCUMENT) readonly document: Document
-  ) {}
+  ) {
+    if (!this.authService.appKeys.includes('login')) {
+      throw new Error(`Must declare a \'login\' application`);
+    }
+  }
 
-  readonly tokenAndTimestamp$ = this.store.pipe(
-    select(createSelector(this.authStateSelector, AuthState.selectTokenRefreshedAt))
+  // Only root credentials need to be stored.
+  private readonly loginApp = this.authService.apps['login'];
+
+  readonly isTokenPersistenceEnabled$ = this.loginApp.state$.pipe(
+    map(appState => appState.isTokenPersistenceEnabled)
   );
 
-  readonly isTokenPersistenceEnabled$ = this.store.pipe(
-    select(createSelector(this.authStateSelector, (authState) => authState.isTokenPersistenceEnabled))
+  readonly tokenRefreshedAt$ = this.loginApp.state$.pipe(
+    select(ApplicationState.selectTokenRefreshedAt)
   );
 
   @Effect()
   readonly enableTokenPersistenceOnLoad$ = defer(() => {
     return this.ifHasWindow((window) => {
       const isEnabled = window.localStorage.getItem(TOKEN_PERSISTENCE_ENABLED_STORAGE_KEY) === 'true';
-      return of(new SetTokenPersistenceIsEnabled(isEnabled));
+      return of(new SetTokenPersistenceIsEnabled('login', isEnabled));
     }) || EMPTY;
   });
 
@@ -57,7 +64,7 @@ export class Oauth2TokenPersistenceEffects {
   @Effect({dispatch: false})
   readonly storeAccessToken$ = combineLatest(
     this.action$.pipe(ofType<StoreAuthToken>(STORE_AUTH_TOKEN)),
-    this.tokenAndTimestamp$,
+    this.tokenRefreshedAt$,
     this.isTokenPersistenceEnabled$,
   ).pipe(
     distinctUntilKeyChanged(0),
@@ -93,8 +100,9 @@ export class Oauth2TokenPersistenceEffects {
       return of({token, timestamp});
     }) || EMPTY;
   }).pipe(
-    map(({token, timestamp}) => new SetAuthToken(token, new Date(timestamp)))
+    map(({token, timestamp}) => new SetAuthToken('login', token, new Date(timestamp)))
   );
+
   private ifHasWindow<T>(action: (window: Window) => T | null): T | null {
     const window = this.document.defaultView;
     return window !== null ? action(window) : null;

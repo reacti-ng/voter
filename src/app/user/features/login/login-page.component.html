@@ -2,11 +2,11 @@
 <form [formGroup]="resourceOwnerCredentialsForm" (ngSubmit)="login()">
   <div class="form-group">
     <label for="username">Username</label>
-    <input id="username" type="text" formGroupName="username">
+    <input id="username" type="text" formControlName="username">
   </div>
   <div class="form-group">
     <label for="password">Password</label>
-    <input id="password" type="password" formGroupName="password">
+    <input id="password" type="password" formControlName="password">
   </div>
 
   <div class="form-check">

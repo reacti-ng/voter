@@ -12,6 +12,7 @@ import {FinalizeAuthorizationCodeGrant, SetAuthToken, SetTokenPersistenceIsEnabl
 import {AuthorizationCodeGrantRequest} from '../../../common/auth/authorization-code-grant.model';
 import {AuthService} from '../../../common/auth/auth.service';
 import {isNotUndefined} from '../../../common/common.types';
+import {ResourceOwnerPasswordGrantApplication} from '../../../common/auth/application.model';
 
 /**
  * Login features for a resource owner of the application.
@@ -28,12 +29,20 @@ import {isNotUndefined} from '../../../common/common.types';
   ]
 })
 export class UserLoginPageComponent implements OnDestroy {
+  readonly app: ResourceOwnerPasswordGrantApplication;
+
   constructor(
     readonly store: Store<object>,
     readonly activatedRoute: ActivatedRoute,
-    readonly authService: AuthService,
+    readonly authService: AuthService<any>,
     @Inject(DOCUMENT) readonly document: Document
-  ) {}
+  ) {
+    const app = this.authService.apps['login'];
+    if (!app || app.type !== 'password') {
+      throw new Error('login application must be of grant type \'password\'');
+    }
+    this.app = app;
+  }
 
   readonly codeGrantRequest$ = this.activatedRoute.queryParamMap.pipe(
     map(queryMap => AuthorizationCodeGrantRequest.fromQueryParams(queryMap)),
@@ -41,16 +50,18 @@ export class UserLoginPageComponent implements OnDestroy {
   );
   private codeGrantRequestSubscription = this.codeGrantRequest$.subscribe();
 
-  readonly redirectOnLoginSubscription = this.authService.token$.pipe(
+  readonly redirectOnLoginSubscription = this.app.state$.pipe(
+    map(state => state.token),
     filter(isNotUndefined),
     // When we have a successful login, generate an auth token for the requested client id
     switchMap((request: AuthorizationCodeGrantRequest) => {
-      return this.authService.getAuthorizationCodeForClientId(request).pipe(
-        map((response) => ({redirectUri: request.redirectUri, response}))
+      return this.app.requestAuthorizationCodeForClientId(request).pipe(
+        map((response) => ({clientId: request.clientId, redirectUri: request.redirectUri, response}))
       );
     })
-  ).subscribe(({redirectUri, response}) => {
-    this.store.dispatch(new FinalizeAuthorizationCodeGrant(redirectUri, response));
+  ).subscribe(({clientId, redirectUri, response}) => {
+    const app = this.authService.appForClientId(clientId);
+    this.store.dispatch(new FinalizeAuthorizationCodeGrant(app.name, redirectUri, response));
   });
 
 
@@ -61,7 +72,7 @@ export class UserLoginPageComponent implements OnDestroy {
 
   readonly rememberMeControl = new FormControl(false);
   private readonly rememberMeSubscription = this.rememberMeControl.valueChanges.subscribe(
-    rememberMe => this.store.dispatch(new SetTokenPersistenceIsEnabled(rememberMe))
+    rememberMe => this.store.dispatch(new SetTokenPersistenceIsEnabled('login', rememberMe))
   );
 
   ngOnDestroy() {
@@ -70,12 +81,12 @@ export class UserLoginPageComponent implements OnDestroy {
     this.redirectOnLoginSubscription.unsubscribe();
   }
 
-  login(){
+  login() {
     // TODO: Check validity
     const credentials = this.resourceOwnerCredentialsForm.value as {username: string, password: string};
-    this.authService.submitResourceOwnerCredentialsGrantRequest(credentials).pipe(
+    this.app.requestGrant(credentials).pipe(
       tap((authToken) => {
-        this.store.dispatch(new SetAuthToken(authToken));
+        this.store.dispatch(new SetAuthToken('login', authToken));
       }),
       catchError((err) => {
         if (err instanceof HttpResponse) {

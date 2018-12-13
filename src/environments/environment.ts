@@ -1,3 +1,5 @@
+/* tslint:disable: max-line-length */
+
 // This file can be replaced during build by using the `fileReplacements` array.
 // `ng build --prod` replaces `environment.ts` with `environment.prod.ts`.
 // The list-item of file replacements can be found in `angular.json`.
@@ -7,10 +9,14 @@ export const environment = {
   appBaseHref: 'http://localhost:4200',
   apiBaseHref: 'http://localhost:8000',
 
-  authConfig: {
-    authServerHref: 'http://localhost:4200/user/login',
-    clientId: 'abcdef12345',
-    requireScopes: []
+  authConfigs: {
+    login: {
+      type: 'password' as 'password' /* lol type system */,
+      tokenUrl: 'http://localhost:8000/auth/token',
+
+      clientId: 'lTE0qANNhYLsmaIY8Jjbd4ZRLy02a9BXmmNisWNo',
+      clientSecret: 'J62KSUsCxHtHyEzybdMGq7VYd2zWGXFrvkRYpVyKCueKpzliwshkloBwwAzNN6HKeWqDJLpfgTfU4QiJF4HT8deZkTeqXXodPQt6e5ycYBNnT2Fv0rcLqtHyagJP1Vjw'
+    }
   }
 };
 

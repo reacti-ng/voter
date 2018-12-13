@@ -12,7 +12,7 @@ export class ApiHostInterceptor implements HttpInterceptor {
   ) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    if (req.url.startsWith('/api')) {
+    if (req.url.startsWith('/api/')) {
       req = req.clone({
         url: [this.apiBaseHref, req.url].join('')
       });
