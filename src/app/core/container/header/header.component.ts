@@ -1,12 +1,9 @@
-import {Component, ViewEncapsulation} from '@angular/core';
-import {createSelector, select, Store} from '@ngrx/store';
+import {Component} from '@angular/core';
+import {select, Store} from '@ngrx/store';
 import {UserState} from '../../../user/user.state';
 import {Observable} from 'rxjs';
 import {User} from '../../../user/user.model';
-import {BeginAuthorizationCodeGrant} from '../../../common/auth/auth.actions';
 import {AuthService} from '../../../common/auth/auth.service';
-import {first} from 'rxjs/operators';
-import {CoreAuthState} from '../../auth/auth.state';
 
 
 @Component({
@@ -15,7 +12,8 @@ import {CoreAuthState} from '../../auth/auth.state';
 })
 export class AppHeaderComponent {
   constructor(
-    readonly store: Store<any>
+    readonly store: Store<object>,
+    readonly authService: AuthService<any>
   ) {}
 
   readonly loginUser$: Observable<User | undefined> = this.store.pipe(
@@ -23,5 +21,10 @@ export class AppHeaderComponent {
   );
 
   navigateToLogin() {
+    // Temporarily redirect everyone to /org/activity. Thats where initial work is going
+    this.authService.setLoginRedirectUri('/org/activity', {app: 'org'});
+    this.authService.beginAuthCodeGrantFlow().subscribe((request) => {
+      console.log('request', request);
+    });
   }
 }
