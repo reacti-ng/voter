@@ -39,7 +39,7 @@ export const ApplicationState = {
   }),
 
   selectToken: (authState: ApplicationState) => authState.token,
-  selectAccessToken: (authState: ApplicationState) => authState.token && authState.token.accessToken,
+  selectAccessToken: (appState: ApplicationState) => appState.token && appState.token.accessToken,
 
   selectTokenRefreshedAt: createSelector(
     (authState: ApplicationState) => authState.token,
@@ -97,6 +97,7 @@ export function reduceCodeGrantApplicationState(state: AuthCodeGrantState, actio
       return {...state, authCodeGrantInProgress: action.response};
     case AUTHORIZATION_CODE_GRANT_TOKEN_EXCHANGE:
       return {...state, authCodeGrantInProgress: action.response};
+
     case SET_TOKEN_PERSISTENCE_IS_ENABLED:
       return {...state, isTokenPersistenceEnabled: action.isEnabled};
     default:
