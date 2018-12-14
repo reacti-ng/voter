@@ -49,21 +49,7 @@ export class UserLoginPageComponent implements OnInit, OnDestroy {
     shareReplay(1)
   );
   private codeGrantRequestSubscription = this.codeGrantRequest$.subscribe();
-  private redirectOnLoginSubscription = this.app.state$.pipe(
-    map(state => state.token),
-    filter(isNotUndefined),
-    distinctUntilChanged(),
-    switchMapTo(this.codeGrantRequest$.pipe(first())),
-    // When we have a successful login, generate an auth token for the requested client id
-    switchMap((request: AuthorizationCodeGrantRequest) => {
-      return this.app.requestAuthorizationCodeForClientId(request).pipe(
-        map((response) => ({redirectUri: request.redirectUri, response}))
-      );
-    })
-  ).subscribe(({redirectUri, response}) => {
-    console.log('issuing redirect to', redirectUri, response);
-    this.store.dispatch(new AuthorizationCodeGrantRedirect(redirectUri, response, {app: 'login'}));
-  });
+  private redirectOnLoginSubscription: Subscription | undefined;
   readonly resourceOwnerCredentialsForm = new FormGroup({
     username: new FormControl('', [Validators.required]),
     password: new FormControl('', [Validators.required])
@@ -74,10 +60,30 @@ export class UserLoginPageComponent implements OnInit, OnDestroy {
     rememberMe => this.store.dispatch(new SetTokenPersistenceIsEnabled(rememberMe, {app: 'login'}))
   );
 
+
+  ngOnInit() {
+    this.redirectOnLoginSubscription = this.app.state$.pipe(
+      map(state => state.token),
+      filter(isNotUndefined),
+      distinctUntilChanged(),
+      switchMapTo(this.codeGrantRequest$.pipe(first())),
+      // When we have a successful login, generate an auth token for the requested client id
+      switchMap((request: AuthorizationCodeGrantRequest) => {
+        return this.app.requestAuthorizationCodeForClientId(request).pipe(
+          map((response) => ({redirectUri: request.redirectUri, response}))
+        );
+      })
+    ).subscribe(({redirectUri, response}) => {
+      console.log('issuing redirect to', redirectUri, response);
+      this.store.dispatch(new AuthorizationCodeGrantRedirect(redirectUri, response, {app: 'login'}));
+    });
+  }
   ngOnDestroy() {
     this.codeGrantRequestSubscription.unsubscribe();
     this.rememberMeSubscription.unsubscribe();
-    this.redirectOnLoginSubscription.unsubscribe();
+    if (this.redirectOnLoginSubscription) {
+      this.redirectOnLoginSubscription.unsubscribe();
+    }
   }
 
   login() {

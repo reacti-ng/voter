@@ -18,7 +18,7 @@ import {Observable} from 'rxjs';
 import {ApplicationState} from './application.state';
 import {AuthorizationCodeGrantRequest} from './authorization-code-grant.model';
 import {Set} from 'immutable';
-import {first, map, tap} from 'rxjs/operators';
+import {filter, first, map, mapTo, tap} from 'rxjs/operators';
 import {BeginAuthorizationCodeGrant, SetLoginRedirect} from './auth.actions';
 import * as uuid from 'uuid';
 
@@ -93,22 +93,23 @@ export class AuthService<CoreAuthState extends Record<keyof CoreAuthState, Appli
     if (app.type !== 'authorization-code-grant') {
       throw new Error(`Can not begin a code grant flwo for an application of type '${app.type}'`);
     }
-    return app.loginRedirectUri$.pipe(
-      first(),
-      map(redirectUri => ({
-        redirectUri,
-        clientId: app.config.clientId,
-        scope: Set(app.config.scope.split(' ')),
-        state: this.state
-      })),
-      tap(request => {
-        this.store.dispatch(new BeginAuthorizationCodeGrant(request, {app: app.name}));
-      })
+
+    const request = {
+      redirectUri: app.config.redirectUri,
+      clientId: app.config.clientId,
+      scope: Set(app.config.scope.split(' ')),
+      state: this.state
+    };
+    this.store.dispatch(new BeginAuthorizationCodeGrant(request, {app: app.name}));
+    return app.authFlowState$.pipe(
+      filter(state => ApplicationState.isAuthCodeGrantInProgress(state)),
+      mapTo(request),
+      first()
     );
   }
 
-  setLoginRedirectUri(uri: string, options?: {app?: Extract<keyof CoreAuthState, string>}): void {
-    this.store.dispatch(new SetLoginRedirect(uri, options));
+  setLoginRedirect(commands: any[], options?: {app?: Extract<keyof CoreAuthState, string>}): void {
+    this.store.dispatch(new SetLoginRedirect(commands, options));
   }
 }
 

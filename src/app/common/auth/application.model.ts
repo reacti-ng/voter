@@ -1,12 +1,12 @@
 import * as uuid from 'uuid';
 import {InjectionToken} from '@angular/core';
 import {EMPTY, Observable, of} from 'rxjs';
-import {ApplicationState} from './application.state';
+import {ApplicationState, AuthorizationCodeGrantState, isAuthorizationCodeGrantState} from './application.state';
 import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
 import {HttpClient, HttpParams, HttpRequest} from '@angular/common/http';
 import {OAuth2Token} from './oauth2-token.model';
 import {fromJson} from '../json/from-json.operator';
-import {first, flatMap, map} from 'rxjs/operators';
+import {filter, first, flatMap, map} from 'rxjs/operators';
 
 export interface PublicGrantApplicationConfig {
   readonly type: 'public';
@@ -25,6 +25,7 @@ export interface ResourceOwnerPasswordGrantApplicationConfig {
 export interface AuthorizationCodeGrantApplicationConfig {
   readonly type: 'authorization-code-grant';
   readonly tokenUrl: string;
+  readonly redirectUri: string;
   readonly apiUrlRegex: string;
   readonly clientId: string;
   readonly clientSecret?: undefined;
@@ -46,9 +47,6 @@ export abstract class ApplicationBase {
   abstract readonly config: AuthApplicationConfig;
   abstract readonly state$: Observable<ApplicationState>;
 
-  get loginRedirectUri$() {
-    return this.state$.pipe(map(state => state.loginRedirectTo));
-  }
 
   getAuthorizeHeaders(request: HttpRequest<any>): Observable<{[k: string]: string} | undefined> {
     let headers$ = of<{[k: string]: string} | undefined>(undefined);
@@ -131,21 +129,24 @@ export class AuthorizationCodeGrantApplication extends ApplicationBase {
     super();
   }
 
+  readonly authFlowState$ = this.state$.pipe(
+    filter(isAuthorizationCodeGrantState)
+  ) as Observable<ApplicationState & AuthorizationCodeGrantState>;
+
+  get loginRedirect$() {
+    return this.authFlowState$.pipe(map(state => state.loginRedirect));
+  }
+
   exchangeAuthCodeForToken(response: AuthorizationCodeGrantResponse): Observable<OAuth2Token> {
-    return this.state$.pipe(
-      first(),
-      map(state => state.loginRedirectTo),
-      flatMap((redirectUri) => {
-        const grantRequest = new HttpParams({
-          fromObject: {
-            grant_type: 'authorization_code',
-            code: response.code,
-            redirect_uri: redirectUri,
-            client_id: this.config.clientId
-          }
-        }).toString();
-        return this.http.post(this.config.tokenUrl, grantRequest);
-      }),
+    const grantRequest = new HttpParams({
+      fromObject: {
+        grant_type: 'code',
+        code: response.code,
+        redirect_uri: this.config.redirectUri,
+        client_id: this.config.clientId
+      }
+    }).toString();
+    return this.http.post(this.config.tokenUrl, grantRequest).pipe(
       fromJson({ifObj: OAuth2Token.fromJson})
     );
   }

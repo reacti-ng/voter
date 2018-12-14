@@ -12,14 +12,15 @@ export const environment = {
       type: 'password' as 'password' /* lol type system */,
       tokenUrl: 'http://localhost:8000/auth/token/',
 
-      clientId: 'lTE0qANNhYLsmaIY8Jjbd4ZRLy02a9BXmmNisWNo',
-      clientSecret: 'J62KSUsCxHtHyEzybdMGq7VYd2zWGXFrvkRYpVyKCueKpzliwshkloBwwAzNN6HKeWqDJLpfgTfU4QiJF4HT8deZkTeqXXodPQt6e5ycYBNnT2Fv0rcLqtHyagJP1Vjw'
+      clientId: '{{login_client_id}}',
+      clientSecret: '{{login_password}}'
     },
     org: {
       type: 'authorization-code-grant' as 'authorization-code-grant',
       tokenUrl: 'http://localhost:8000/auth/token',
+      redirectUri: 'http://localhost:4200/',
       stateUrl: 'http://localhost:8000/state',
-      clientId: 'none-yet',
+      clientId: '{{org_client_id}}',
       apiUrlRegex: '^\/api\/'
     }
   }

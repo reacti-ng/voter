@@ -22,7 +22,7 @@ export class AppHeaderComponent {
 
   navigateToLogin() {
     // Temporarily redirect everyone to /org/activity. Thats where initial work is going
-    this.authService.setLoginRedirectUri('/org/activity', {app: 'org'});
+    this.authService.setLoginRedirect(['/org/activity'], {app: 'org'});
     this.authService.beginAuthCodeGrantFlow().subscribe((request) => {
       console.log('request', request);
     });

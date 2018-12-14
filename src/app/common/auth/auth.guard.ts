@@ -1,16 +1,13 @@
-import {Inject, Injectable} from '@angular/core';
-import {createSelector, select, Selector, Store} from '@ngrx/store';
+import {Injectable} from '@angular/core';
+import {Store} from '@ngrx/store';
 import {ActivatedRouteSnapshot, CanActivate, CanActivateChild, RouterStateSnapshot} from '@angular/router';
-import {ApplicationState} from './application.state';
-import {filter, first, map, mapTo, skip, switchMap, tap, timeout} from 'rxjs/operators';
-import {Observable, of, race, zip} from 'rxjs';
-import {OAuth2Token} from './oauth2-token.model';
 import {AuthService} from './auth.service';
 import {RouterData} from '../router.types';
-import {AUTH_STATE_SELECTOR} from './auth.state';
 import {AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
-import {AuthApplication} from './application.model';
 import {AuthorizationCodeGrantTokenExchange} from './auth.actions';
+import {first, map} from 'rxjs/operators';
+import {Observable} from 'rxjs';
+import {ApplicationState} from './application.state';
 
 
 @Injectable()
@@ -28,19 +25,9 @@ export class IsAuthorizedGuard implements CanActivate, CanActivateChild {
   canActivate(snapshot: ActivatedRouteSnapshot) {
     const data = RouterData.fromActivatedRouteSnapshot(snapshot);
     const app = this.appForRouteData(data);
-
-    const authGrantResponse = AuthorizationCodeGrantResponse.fromQueryParams(snapshot.queryParamMap);
-    if (authGrantResponse != null) {
-      this.store.dispatch(new AuthorizationCodeGrantTokenExchange(authGrantResponse, {app: app.name}));
-    }
-
-    return zip(
-      app.state$.pipe(select(ApplicationState.selectAccessToken)),
-      app.state$.pipe(select(ApplicationState.isAuthCodeGrantInProgress))
-    ).pipe(
-      filter(([_, isGrantInProgress]) => !isGrantInProgress),
-      map(([token, _]) => token !== undefined),
-      first()
+    return (app.state$ as Observable<ApplicationState>).pipe(
+      first(),
+      map(state => !!state.token)
     );
   }
 

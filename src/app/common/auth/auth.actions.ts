@@ -18,7 +18,7 @@ export const SET_LOGIN_REDIRECT = 'common.auth: set login redirect';
 export class SetLoginRedirect {
   readonly type = SET_LOGIN_REDIRECT;
   readonly app?: AppKey;
-  constructor(readonly redirectTo: string, options?: {readonly app?: AppKey}) {
+  constructor(readonly redirect: any[], options?: {readonly app?: AppKey}) {
     this.app = options && options.app;
   }
 }

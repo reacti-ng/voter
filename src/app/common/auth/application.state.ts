@@ -16,22 +16,28 @@ export interface ApplicationState {
   readonly token?: OAuth2Token;
   readonly refreshedAt: Date;
 
-  // The path components of the page to redirect to after successful login
-  readonly loginRedirectTo: string;
-
   // Should the access token persist across user sessions?
   readonly isTokenPersistenceEnabled: boolean;
+}
 
+export interface AuthorizationCodeGrantState {
+  // Restore the path on successful load
+  readonly loginRedirect: any[];
   readonly authCodeGrantInProgress?: AuthorizationCodeGrantRequest | AuthorizationCodeGrantResponse;
+}
+
+export function isAuthorizationCodeGrantState(obj: any): obj is AuthorizationCodeGrantState {
+  return !!obj && Array.isArray(obj['loginRedirect']);
 }
 
 export const ApplicationState = {
   initial: (app: keyof any) => ({
     app,
-    loginRedirectTo: '/',
     refreshedAt: new Date(Date.now()),
-    isTokenPersistenceEnabled: false
+    isTokenPersistenceEnabled: false,
+    loginRedirect: ['/public']
   }),
+
   selectToken: (authState: ApplicationState) => authState.token,
   selectAccessToken: (authState: ApplicationState) => authState.token && authState.token.accessToken,
 
@@ -50,7 +56,7 @@ export const ApplicationState = {
       return [token, expiresAt] as [OAuth2Token, Date];
     }
   ),
-  isAuthCodeGrantInProgress: (authState: ApplicationState) => authState.authCodeGrantInProgress !== undefined
+  isAuthCodeGrantInProgress: (authState: AuthorizationCodeGrantState) => authState.authCodeGrantInProgress !== undefined
 };
 
 export function reduceApplicationState(state: ApplicationState, action: AuthAction): ApplicationState {
@@ -60,15 +66,31 @@ export function reduceApplicationState(state: ApplicationState, action: AuthActi
         ...state,
         token: action.token,
         refreshedAt: action.useTimestamp ? action.useTimestamp : new Date(Date.now()),
-        authCodeGrantInProgress: undefined
       };
-    case SET_LOGIN_REDIRECT:
-      return {...state, loginRedirectTo: action.redirectTo};
     case AUTHORIZATION_CODE_GRANT_BEGIN:
       return {
         ...state,
         token: undefined,
         refreshedAt: new Date(Date.now()),
+      };
+    default:
+      return state;
+  }
+}
+
+type AuthCodeGrantState = ApplicationState & AuthorizationCodeGrantState;
+
+
+export function reduceCodeGrantApplicationState(state: AuthCodeGrantState, action: AuthAction): AuthCodeGrantState {
+  state = reduceApplicationState(state, action) as AuthCodeGrantState;
+ switch (action.type) {
+    case SET_AUTH_TOKEN:
+      return {...state, authCodeGrantInProgress: undefined};
+    case SET_LOGIN_REDIRECT:
+      return {...state, loginRedirect: action.redirect};
+    case AUTHORIZATION_CODE_GRANT_BEGIN:
+      return {
+        ...state,
         authCodeGrantInProgress: action.request
       };
     case AUTHORIZATION_CODE_GRANT_REDIRECT:
