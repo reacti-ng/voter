@@ -44,6 +44,7 @@ export class UserLoginPageComponent implements OnInit, OnDestroy {
     this.app = app;
   }
 
+
   readonly codeGrantRequest$ = this.activatedRoute.queryParamMap.pipe(
     map(queryMap => AuthorizationCodeGrantRequest.fromQueryParams(queryMap)),
     shareReplay(1)
@@ -59,7 +60,6 @@ export class UserLoginPageComponent implements OnInit, OnDestroy {
   private readonly rememberMeSubscription = this.rememberMeControl.valueChanges.subscribe(
     rememberMe => this.store.dispatch(new SetTokenPersistenceIsEnabled(rememberMe, {app: 'login'}))
   );
-
 
   ngOnInit() {
     this.redirectOnLoginSubscription = this.app.state$.pipe(
@@ -99,9 +99,7 @@ export class UserLoginPageComponent implements OnInit, OnDestroy {
         }
         return throwError(err);
       })
-    ).subscribe(
-      (token) => console.log('login successful', token)
-    );
+    ).subscribe();
   }
 
 
