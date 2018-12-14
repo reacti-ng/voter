@@ -15,6 +15,8 @@ export const environment = {
       type: 'password' as 'password' /* lol type system */,
       tokenUrl: 'http://localhost:8000/auth/token/',
 
+      // FIXME: login page need to be supplied these more securely.
+      // OK for development purposes to have them here.
       clientId: 'bnha97rsOV4HEpUPtbBwLLQSdptDPLhIEE5dnfXR',
       clientSecret: 'IErRaaFBTXj9YoksHi5EVto8MGPkjtf0zvdTBmVb8K0uEzZ1OEdkDNShrJDg2xJBHXRLiXgRuCQhbjqqPOjWdcBS1SGE9XdB41KcEtMz5nMWzYx8tVzCUxp7MPKaZEPs'
     },
