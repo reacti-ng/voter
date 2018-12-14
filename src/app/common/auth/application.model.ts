@@ -6,7 +6,8 @@ import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './a
 import {HttpClient, HttpParams, HttpRequest} from '@angular/common/http';
 import {OAuth2Token} from './oauth2-token.model';
 import {fromJson} from '../json/from-json.operator';
-import {filter, first, flatMap, map} from 'rxjs/operators';
+import {concatMap, exhaustMap, filter, first, flatMap, map, switchMap} from 'rxjs/operators';
+import {select} from '@ngrx/store';
 
 export interface PublicGrantApplicationConfig {
   readonly type: 'public';
@@ -28,7 +29,6 @@ export interface AuthorizationCodeGrantApplicationConfig {
   readonly redirectUri: string;
   readonly apiUrlRegex: string;
   readonly clientId: string;
-  readonly clientSecret?: undefined;
   readonly scope: string;
 }
 
@@ -47,20 +47,35 @@ export abstract class ApplicationBase {
   abstract readonly config: AuthApplicationConfig;
   abstract readonly state$: Observable<ApplicationState>;
 
+  get token$(): Observable<OAuth2Token | undefined> {
+    return this.state$.pipe(map(state => state.token));
+  }
 
-  getAuthorizeHeaders(request: HttpRequest<any>): Observable<{[k: string]: string} | undefined> {
+  /**
+   * Get the authorization headers for the request, ignoring the apiUrlRegex.
+   * @private
+   */
+  protected _getAuthorizeHeadersUnsafe(): Observable<{[k: string]: string} | undefined> {
+    return this.state$.pipe(
+      select(ApplicationState.selectAccessToken),
+      first(),
+      map(accessToken => {
+        return accessToken ? {'authorization': `Bearer ${accessToken}`} : undefined
+      })
+    );
+  }
+
+  /**
+   * Get the authorization headers for the request. If the apiUrlRegex does not match,
+   * return `undefined`.
+   *
+   * @param request
+   */
+  getAuthorizeHeaders(request: HttpRequest<any>) {
     let headers$ = of<{[k: string]: string} | undefined>(undefined);
     const urlRegex = new RegExp(this.config.apiUrlRegex || /.*/);
     if (urlRegex && urlRegex.test(request.url)) {
-      headers$ = this.state$.pipe(
-        first(),
-        map(state => state.token && state.token.accessToken),
-        map(accessToken => {
-          return accessToken
-            ? {'authorization': `Bearer ${accessToken}`}
-            : undefined;
-        })
-      );
+      headers$ = this._getAuthorizeHeadersUnsafe();
     }
     return headers$;
   }
@@ -71,6 +86,7 @@ export class PublicGrantApplication extends ApplicationBase {
   readonly config = this as PublicGrantApplicationConfig;
   readonly state$: Observable<ApplicationState> = EMPTY;
   constructor(readonly http: HttpClient, readonly name: string) { super(); }
+
 }
 
 export class ResourceOwnerPasswordGrantApplication extends ApplicationBase {
@@ -85,14 +101,39 @@ export class ResourceOwnerPasswordGrantApplication extends ApplicationBase {
     super();
   }
 
+
   /**
    * An active resource owner grant can request access on behalf of the specified client id.
    *
    * @param request: AuthorizationCodeGrantRequest
    */
-  requestAuthorizationCodeForClientId(request: AuthorizationCodeGrantRequest) {
-    // FIXME: Server-side stuff.
-    return of({code: uuid.v4().substr(28), state: request.state});
+  requestAuthorizationCodeForClientId(request: AuthorizationCodeGrantRequest): Observable<AuthorizationCodeGrantResponse> {
+    const token$ = this.state$.pipe(map(state => state.token));
+    return token$.pipe(
+      first(),
+      switchMap(token => {
+        if (token === undefined) {
+          throw new Error(`Must be logged in in order to request an access token`);
+        }
+
+        const body = AuthorizationCodeGrantRequest.toHttpParams(request);
+
+        // Call the user/auth_code with the resource owner grant.
+        // This is the _only_ api endpoint which accepts authorization using the resource owner app
+        return this._getAuthorizeHeadersUnsafe().pipe(
+          flatMap(authHeaders => {
+            return this.http.post('http://localhost:8000/api/user/grant_auth_code/', body, {
+              headers: {
+                ...authHeaders,
+                'content-type': 'application/x-www-form-urlencoded'
+              }
+            });
+          }),
+          fromJson({
+            ifObj: (obj) => AuthorizationCodeGrantResponse.fromJson(obj)
+          }));
+      })
+    );
   }
 
   requestGrant(credentials: {username: string, password: string}): Observable<OAuth2Token> {
@@ -140,13 +181,15 @@ export class AuthorizationCodeGrantApplication extends ApplicationBase {
   exchangeAuthCodeForToken(response: AuthorizationCodeGrantResponse): Observable<OAuth2Token> {
     const grantRequest = new HttpParams({
       fromObject: {
-        grant_type: 'code',
+        grant_type: 'authorization_code',
         code: response.code,
         redirect_uri: this.config.redirectUri,
-        client_id: this.config.clientId
+        client_id: this.config.clientId,
       }
     }).toString();
-    return this.http.post(this.config.tokenUrl, grantRequest).pipe(
+    return this.http.post(this.config.tokenUrl, grantRequest, {
+      headers: {'content-type': 'application/x-www-form-urlencoded'}
+    }).pipe(
       fromJson({ifObj: OAuth2Token.fromJson})
     );
   }

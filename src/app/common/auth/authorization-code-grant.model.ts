@@ -3,6 +3,7 @@ import {ParamMap} from '@angular/router';
 import {Mutable, notAStringError} from '../common.types';
 import {HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
+import {JsonObject} from '../json/json.model';
 
 /**
  * These query parameters are passed to the login component via the
@@ -61,6 +62,7 @@ export const AuthorizationCodeGrantRequest = {
       }
     });
   }
+
 };
 
 export interface AuthorizationCodeGrantResponse {
@@ -69,6 +71,17 @@ export interface AuthorizationCodeGrantResponse {
 }
 
 export const AuthorizationCodeGrantResponse = {
+  fromJson: (json: JsonObject) => {
+    const {code, state} = json;
+    if (typeof code !== 'string') {
+      throw notAStringError('code', code);
+    }
+    if (typeof state !== 'string') {
+      throw notAStringError('state', state);
+    }
+    return {code, state} as AuthorizationCodeGrantResponse;
+  },
+
   fromQueryParams: (params: ParamMap) => {
     const code = params.get('code');
     if (code != null) {
