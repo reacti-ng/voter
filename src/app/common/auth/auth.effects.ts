@@ -2,21 +2,13 @@ import {Inject, Injectable} from '@angular/core';
 import {DOCUMENT} from '@angular/common';
 
 
-import {concatMap, tap} from 'rxjs/operators';
+import {concatMap, filter, map} from 'rxjs/operators';
 
-import {select, Selector, Store} from '@ngrx/store';
+import {Store} from '@ngrx/store';
 import {Actions, Effect, ofType} from '@ngrx/effects';
 
-import {
-  AUTHORIZATION_CODE_GRANT_BEGIN,
-  BeginAuthorizationCodeGrant,
-  AUTHORIZATION_CODE_GRANT_REDIRECT,
-  AuthorizationCodeGrantRedirect,
-  SET_AUTH_TOKEN,
-  SetAuthToken,
-  StoreAuthToken
-} from './auth.actions';
-import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
+import {isAuthAction, SET_AUTH_TOKEN, SetAuthToken, StoreAuthToken} from './auth.actions';
+import {AUTH_DEFAULT_APPLICATION} from './application.model';
 
 
 @Injectable()
@@ -25,6 +17,7 @@ export class AuthEffects {
   constructor(
     readonly action$: Actions,
     readonly store: Store<object>,
+    @Inject(AUTH_DEFAULT_APPLICATION) private readonly defaultAppId: string,
     @Inject(DOCUMENT) readonly document: Document,
   ) {}
 
@@ -33,6 +26,17 @@ export class AuthEffects {
     ofType<SetAuthToken>(SET_AUTH_TOKEN),
     concatMap((action) => [action, new StoreAuthToken({app: action.app})])
   );
+
+  @Effect()
+  readonly provideDefaultApp$ = this.action$.pipe(
+    filter(isAuthAction),
+    filter(action => action.app === undefined),
+    map(action => {
+      console.log('providing default app');
+      return ({type: action.type, ...action, app: this.defaultAppId});
+    })
+  );
+
 
   /* TODO: Re-enable this.
   @Effect()

@@ -44,6 +44,7 @@ export class AuthorizationCodeGrantRedirect {
     this.app = options && options.app;
   }
 }
+
 // Exhange the authorization code grant for an access token.
 export const AUTHORIZATION_CODE_GRANT_TOKEN_EXCHANGE = 'common.auth: authorization code grant token exchange';
 export class  AuthorizationCodeGrantTokenExchange {

@@ -1,11 +1,14 @@
 import {OAuth2Token} from './oauth2-token.model';
 import {
   AuthAction,
-  AUTHORIZATION_CODE_GRANT_BEGIN, AUTHORIZATION_CODE_GRANT_REDIRECT, AUTHORIZATION_CODE_GRANT_TOKEN_EXCHANGE,
+  AUTHORIZATION_CODE_GRANT_BEGIN,
+  AUTHORIZATION_CODE_GRANT_REDIRECT,
+  AUTHORIZATION_CODE_GRANT_TOKEN_EXCHANGE,
   SET_AUTH_TOKEN,
-  SET_LOGIN_REDIRECT, SET_TOKEN_PERSISTENCE_IS_ENABLED
+  SET_LOGIN_REDIRECT,
+  SET_TOKEN_PERSISTENCE_IS_ENABLED
 } from './auth.actions';
-import {Action, ActionReducer, createSelector} from '@ngrx/store';
+import {createSelector} from '@ngrx/store';
 import {addSeconds} from 'date-fns';
 import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
 
@@ -82,7 +85,7 @@ type AuthCodeGrantState = ApplicationState & AuthorizationCodeGrantState;
 
 
 export function reduceCodeGrantApplicationState(state: AuthCodeGrantState, action: AuthAction): AuthCodeGrantState {
-  state = reduceApplicationState(state, action) as AuthCodeGrantState;
+ state = reduceApplicationState(state, action) as AuthCodeGrantState;
  switch (action.type) {
     case SET_AUTH_TOKEN:
       return {...state, authCodeGrantInProgress: undefined};
@@ -97,7 +100,6 @@ export function reduceCodeGrantApplicationState(state: AuthCodeGrantState, actio
       return {...state, authCodeGrantInProgress: action.response};
     case AUTHORIZATION_CODE_GRANT_TOKEN_EXCHANGE:
       return {...state, authCodeGrantInProgress: action.response};
-
     case SET_TOKEN_PERSISTENCE_IS_ENABLED:
       return {...state, isTokenPersistenceEnabled: action.isEnabled};
     default:
