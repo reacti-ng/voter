@@ -10,14 +10,15 @@ import {
   SetAuthToken,
   SetLoginRedirect
 } from './auth.actions';
-import {concatMap, first, switchMap, tap} from 'rxjs/operators';
+import {catchError, concatMap, filter, first, map, startWith, switchMap, switchMapTo, tap} from 'rxjs/operators';
 import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
 import {DOCUMENT} from '@angular/common';
 import {Router} from '@angular/router';
 import {AuthService} from './auth.service';
-import {Observable, of, zip} from 'rxjs';
+import {concat, Observable, of, throwError, zip} from 'rxjs';
 import {AuthorizationCodeGrantApplication} from './application.model';
 import {Action} from '@ngrx/store';
+import {HttpResponse} from '@angular/common/http';
 
 
 @Injectable()
@@ -67,17 +68,29 @@ export class AuthorizationCodeGrantEffects {
       if (app.type !== 'authorization-code-grant') {
         throw new Error(`Application ${action.app} must be authorization-code-grant (got ${app})`);
       }
-      return zip(
-        of(app),
-        app.exchangeAuthCodeForToken(action.response),
-        loadRedirectActions(this.document.defaultView, app)
-      ).pipe(first());
-    }),
-    concatMap(([app, token, redirectActions]) => [
-      ...redirectActions,
-      new SetAuthToken(token, {app: app.name}),
-    ]),
+
+      const setLoginRedirect$ = loadLoginRedirectAction(this.document.defaultView, app);
+      const setAuthToken$ = app.authFlowState$.pipe(
+        filter(state => !!state.authCodeGrantInProgress),
+        first(),
+        switchMap(() => app.exchangeAuthCodeForToken(action.response)),
+        map((token) => new SetAuthToken(token, {app: app.name})),
+        catchError(err => {
+          if (err instanceof HttpResponse && err.status === 401) {
+            // This is just a login failure,
+            return of(new SetAuthToken(undefined, {app: app.name}));
+          }
+          return throwError(err);
+        }),
+      );
+
+      return concat(
+        setLoginRedirect$,
+        setAuthToken$
+      );
+    })
   );
+
 }
 
 function saveRedirectCommands(storage: Storage, app: AuthorizationCodeGrantApplication) {
@@ -86,15 +99,15 @@ function saveRedirectCommands(storage: Storage, app: AuthorizationCodeGrantAppli
   });
 }
 
-function loadRedirectActions(window: Window | null, app: AuthorizationCodeGrantApplication): Observable<Action[]> {
+function loadLoginRedirectAction(window: Window | null, app: AuthorizationCodeGrantApplication): Observable<Action> {
   if (window) {
     const rawRedirect = window.localStorage.getItem(`common.auth::${app.name}::loginRedirect`);
     if (rawRedirect !== null) {
       const redirect = JSON.parse(rawRedirect);
       if (Array.isArray(redirect)) {
-        return of([new SetLoginRedirect(redirect, {app: app.name})]);
+        return of(new SetLoginRedirect(redirect, {app: app.name}));
       }
     }
   }
-  return of([new SetLoginRedirect(['/user'], {app: app.name})]);
+  return of(new SetLoginRedirect(['/user'], {app: app.name}));
 }
