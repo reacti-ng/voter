@@ -12,11 +12,10 @@ import {AuthorizationCodeGrantRedirectHandlerGuard} from './authorization-code-g
   ]
 })
 export class CommonAuthModule {
-  static forRoot(defaultAppId: string, configs: AuthApplicationConfigs<any>): ModuleWithProviders {
+  static forRoot(configs: AuthApplicationConfigs<any>): ModuleWithProviders {
     return {
       ngModule: CommonAuthModule,
       providers: [
-        {provide: AUTH_DEFAULT_APPLICATION, useValue: defaultAppId},
         {provide: AUTH_APPLICATION_CONFIGS, useValue: configs},
         AuthService,
         IsAuthorizedGuard,

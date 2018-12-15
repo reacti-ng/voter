@@ -18,6 +18,7 @@ import {OrgSharedModule} from '../org/org-shared.module';
 import {API_BASE_HREF} from '../common/model/api-host.interceptor';
 import {CommonModelModule} from '../common/model/model.module';
 import {AUTH_STATE_SELECTOR} from '../common/auth/auth.state';
+import {AUTH_DEFAULT_APPLICATION} from '../common/auth/application.model';
 
 @NgModule({
   imports: [
@@ -33,7 +34,7 @@ import {AUTH_STATE_SELECTOR} from '../common/auth/auth.state';
     HttpClientModule,
     RouterModule.forRoot(coreRoutes, {enableTracing: !environment.production}),
 
-    CommonAuthModule.forRoot(environment.authDefaultAppId, environment.authConfigs),
+    CommonAuthModule.forRoot(environment.authConfigs),
     ContainerModule,
     UserModule.forRoot(),
     PollSharedModule.forRoot(),
@@ -43,6 +44,7 @@ import {AUTH_STATE_SELECTOR} from '../common/auth/auth.state';
     {provide: APP_BASE_HREF, useValue: environment.appBaseHref },
     {provide: API_BASE_HREF, useValue: environment.apiBaseHref },
     {provide: CONTROLS_STATE_SELECTOR , useValue: selectControlsState},
+    {provide: AUTH_DEFAULT_APPLICATION, useValue: environment.authDefaultAppId},
     {provide: AUTH_STATE_SELECTOR, useValue: selectAuthState},
   ],
   exports: [
