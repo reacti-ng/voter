@@ -6,7 +6,7 @@ import {ActivatedRoute} from '@angular/router';
 import {Store} from '@ngrx/store';
 
 import {of, Subscription, throwError} from 'rxjs';
-import {catchError, distinctUntilChanged, filter, first, map, shareReplay, switchMap, switchMapTo, tap} from 'rxjs/operators';
+import {catchError, distinctUntilChanged, filter, first, map, shareReplay, startWith, switchMap, switchMapTo, tap} from 'rxjs/operators';
 
 import {AuthorizationCodeGrantRedirect, SetAuthToken, SetTokenPersistenceIsEnabled} from '../../../common/auth/auth.actions';
 import {AuthorizationCodeGrantRequest} from '../../../common/auth/authorization-code-grant.model';
@@ -57,7 +57,9 @@ export class UserLoginPageComponent implements OnInit, OnDestroy {
   });
 
   readonly rememberMeControl = new FormControl(false);
-  private readonly rememberMeSubscription = this.rememberMeControl.valueChanges.subscribe(
+  private readonly rememberMeSubscription = this.rememberMeControl.valueChanges.pipe(
+    startWith(false)
+  ).subscribe(
     rememberMe => this.store.dispatch(new SetTokenPersistenceIsEnabled(rememberMe, {app: 'login'}))
   );
 
