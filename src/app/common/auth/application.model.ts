@@ -11,7 +11,6 @@ import {select} from '@ngrx/store';
 
 export interface PublicGrantApplicationConfig {
   readonly type: 'public';
-  readonly apiUrlRegex?: undefined;
   readonly clientId?: undefined;
 }
 
@@ -21,13 +20,14 @@ export interface ResourceOwnerPasswordGrantApplicationConfig {
   readonly apiUrlRegex?: undefined;
   readonly clientId: string;
   readonly clientSecret: string;
+
+  readonly grantAuthCodeUrl?: string;
 }
 
 export interface AuthorizationCodeGrantApplicationConfig {
   readonly type: 'authorization-code-grant';
   readonly tokenUrl: string;
   readonly redirectUri: string;
-  readonly apiUrlRegex: string;
   readonly clientId: string;
   readonly scope: string;
 }
@@ -52,32 +52,14 @@ export abstract class ApplicationBase {
   }
 
   /**
-   * Get the authorization headers for the request, ignoring the apiUrlRegex.
-   * @private
+   * Get the authorization headers for the request, if the user is logged in.
    */
-  protected _getAuthorizeHeadersUnsafe(): Observable<{[k: string]: string} | undefined> {
+  getAuthorizeHeaders(): Observable<{[k: string]: string}> {
     return this.state$.pipe(
       select(ApplicationState.selectAccessToken),
       first(),
-      map(accessToken => {
-        return accessToken ? {'authorization': `Bearer ${accessToken}`} : undefined
-      })
+      map(accessToken => (accessToken ? {'authorization': `Bearer ${accessToken}`} : {}) as { [k: string]: string })
     );
-  }
-
-  /**
-   * Get the authorization headers for the request. If the apiUrlRegex does not match,
-   * return `undefined`.
-   *
-   * @param request
-   */
-  getAuthorizeHeaders(request: HttpRequest<any>) {
-    let headers$ = of<{[k: string]: string} | undefined>(undefined);
-    const urlRegex = new RegExp(this.config.apiUrlRegex || /.*/);
-    if (urlRegex && urlRegex.test(request.url)) {
-      headers$ = this._getAuthorizeHeadersUnsafe();
-    }
-    return headers$;
   }
 }
 
@@ -120,7 +102,7 @@ export class ResourceOwnerPasswordGrantApplication extends ApplicationBase {
 
         // Call the user/auth_code with the resource owner grant.
         // This is the _only_ api endpoint which accepts authorization using the resource owner app
-        return this._getAuthorizeHeadersUnsafe().pipe(
+        return this.getAuthorizeHeaders().pipe(
           flatMap(authHeaders => {
             return this.http.post('http://localhost:8000/api/user/grant_auth_code/', body, {
               headers: {

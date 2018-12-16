@@ -25,7 +25,6 @@ export const environment = {
       tokenUrl: 'http://localhost:8000/auth/token/',
       redirectUri: 'http://localhost:4200/',
       clientId: 'EnxDClOfU2BVV1Ze6zwM0uxcwi6l9nRX9yvfS2hB',
-      apiUrlRegex: '^\/api\/',
       scope: 'user org read write edit'
     }
   }
