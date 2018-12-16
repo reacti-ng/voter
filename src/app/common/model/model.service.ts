@@ -104,8 +104,6 @@ export abstract class ModelService<T extends Ident> implements ModelResolver<T> 
     });
   }
 
-
-
   search(options?: { params: HttpParams | {[k: string]: string | string[]} }): PageNumberPagination<T> {
     options = options || {params: new HttpParams()};
     return this.pagination.create(this.path, {

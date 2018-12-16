@@ -18,8 +18,8 @@ export class ApiAuthInterceptor implements HttpInterceptor {
     let authRequest$ = of(req);
     if (req.url.startsWith('/api') && req.headers.get('authorization') == null) {
       authRequest$ = fromArray(this.authService.appKeys).pipe(
-        concatMap(appKey => this.authService.apps[appKey].getAuthorizeHeaders(req)),
-        reduce((request: HttpRequest<any>, authHeaders: {[k: string]: string} | undefined) => {
+        concatMap(appKey => this.authService.apps[appKey].getAuthorizeHeaders()),
+        reduce((request: HttpRequest<any>, authHeaders: {[k: string]: string} ) => {
           return request.clone({setHeaders: authHeaders});
         }, req)
       );
