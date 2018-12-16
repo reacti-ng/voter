@@ -1,36 +1,43 @@
 import {Org} from './org.model';
 import {createEntityAdapter, Dictionary, EntityState} from '@ngrx/entity';
-import {createFeatureSelector, createSelector} from '@ngrx/store';
-import {ADD_ORG, ADD_ORGS, OrgAction} from './org.actions';
+import {Action, createFeatureSelector, createSelector} from '@ngrx/store';
+import {ADD_ORG, ADD_ORGS, isOrgAction, OrgAction} from './org.actions';
 import {List} from 'immutable';
-
 
 export interface OrgState extends EntityState<Org> {
   searchCandidates: List<Org>;
-  currentId: string;
+
+  // The org of the current page, if the current page is a 'detail' page
+  detailId: string | undefined;
+}
+
+export interface OrgDetailState {
+  detailId: string | undefined;
 }
 
 const orgStateAdaptor = createEntityAdapter<Org>();
-const initialOrgState = orgStateAdaptor.getInitialState();
+const initialOrgState: OrgState = orgStateAdaptor.getInitialState({
+  searchCandidates: List(),
+  detailId: undefined
+});
 
 export const OrgState = {
-  fromRoot: createFeatureSelector<OrgState>('features.org'),
+  fromRoot: createFeatureSelector<OrgState>('org'),
   ...orgStateAdaptor.getSelectors(),
 
-  current: createSelector(
-    orgStateAdaptor.getSelectors().selectEntities,
-    (orgState: OrgState) => orgState.currentId,
-    (entities: Dictionary<Org>, currentId: string) => currentId && entities[currentId] || undefined
-  ),
+  detail: (state: OrgState) => state.detailId && state.entities[state.detailId]
 };
 
-export function orgStateReducer(orgState = initialOrgState, action: OrgAction) {
+export function reduceOrgState(state = initialOrgState, action: Action): OrgState {
+  if (!isOrgAction(action)) {
+    return state;
+  }
   switch (action.type) {
     case ADD_ORG:
-      return orgStateAdaptor.addOne(action.org, orgState);
-
+      return orgStateAdaptor.addOne(action.org, state);
     case ADD_ORGS:
-      return orgStateAdaptor.addAll(action.orgs.toArray(), orgState);
-
+      return orgStateAdaptor.addAll(action.orgs.toArray(), state);
+    default:
+      return state;
   }
 }

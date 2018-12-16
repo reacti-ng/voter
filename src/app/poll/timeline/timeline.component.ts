@@ -1,8 +1,11 @@
 import {Component, Input, NgModule, OnDestroy} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {PollTimelineCardComponent} from '../timeline-card/timeline-card.component';
-import {BehaviorSubject} from 'rxjs';
+import {BehaviorSubject, Observable} from 'rxjs';
 import {List} from 'immutable';
+import {PollService} from '../poll.service';
+import {Poll} from '../poll.model';
+import {map, switchMap} from 'rxjs/operators';
 
 @Component({
   selector: 'app-poll-timeline',
@@ -18,6 +21,13 @@ export class PollTimelineComponent implements OnDestroy {
   set filters(filters: {[k: string]: string | string[]}) {
     this.filtersSubject.next(filters);
   }
+
+  readonly pages$ = this.filtersSubject.pipe(map(filter => this.pollService.timeline({params: filter})));
+  readonly poll$ = this.pages$.pipe(switchMap(pagination => pagination.results$));
+
+  constructor(
+    readonly pollService: PollService
+  ) {}
 
   ngOnDestroy(): void {
     this.filtersSubject.complete();

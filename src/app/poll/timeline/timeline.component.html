@@ -1,1 +1,5 @@
 
+
+<div *ngIf="polls$ | async as polls">
+  <app-poll-timeline-card *ngFor="let poll of polls" [poll]="poll"></app-poll-timeline-card>
+</div>

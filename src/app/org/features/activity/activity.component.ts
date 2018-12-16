@@ -13,15 +13,10 @@ import {map} from 'rxjs/operators';
 export class OrgActivityPageComponent {
   constructor(
     protected readonly store: Store<object>,
-    protected readonly orgService: OrgService
   ) {}
 
-  readonly current$: Observable<Org | undefined> = this.store.pipe(
-    select(createSelector(OrgState.fromRoot, OrgState.current))
-  );
-
-  readonly pollFilters$ = this.current$.pipe(
-    map(org => org && {org: org.id})
-  );
+  readonly detail$: Observable<Org> = this.store.pipe(
+    select(createSelector(OrgState.fromRoot, OrgState.detail))
+  ) as Observable<Org> /* otherwise it would be 404 */;
 
 }

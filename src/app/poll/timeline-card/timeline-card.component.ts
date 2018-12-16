@@ -6,7 +6,7 @@ import {Poll} from '../poll.model';
  * Summary of a poll intended for display in a list of polls
  */
 @Component({
-  selector: 'app-timeline-card-component',
+  selector: 'app-poll-timeline-card',
   templateUrl: './timeline-card.component.html'
 })
 export class PollTimelineCardComponent {

@@ -30,10 +30,10 @@ export class UpsertOrgs {
   constructor(readonly orgs: Set<Org>) {}
 }
 
-export const SET_ORG_PAGE_SUBJECT = 'features.org: set features subject';
-export class SetOrgPageSubject {
-  readonly type = SET_ORG_PAGE_SUBJECT;
-  constructor(readonly org: ModelRef<Org>) {}
+export const SET_DETAIL_ORG = 'features.org: set detail org';
+export class SetDetailOrg {
+  readonly type = SET_DETAIL_ORG;
+  constructor(readonly org: Org) {}
 }
 
 export type OrgAction
@@ -41,4 +41,15 @@ export type OrgAction
   | AddOrgs
   | UpsertOrgs
   | ResolveOrgs
-  | SetOrgPageSubject;
+  | SetDetailOrg;
+
+
+export function isOrgAction(obj: any): obj is OrgAction {
+  return !!obj && [
+    ADD_ORG,
+    ADD_ORGS,
+    UPSERT_ORGS,
+    RESOLVE_ORGS,
+    SET_DETAIL_ORG
+  ].includes(obj.type);
+}

@@ -14,3 +14,6 @@ export class AddManyPolls {
 }
 
 export type PollAction = AddPoll | AddManyPolls;
+export function isPollAction(obj: any): obj is PollAction {
+  return !!obj && [ADD_POLL, ADD_MANY_POLLS].includes(obj.type);
+}

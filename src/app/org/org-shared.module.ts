@@ -4,6 +4,7 @@ import {OrgSearchComponent} from './search/org-search.component';
 import {OrgBadgeComponent} from './badge/badge.component';
 import {PollSharedModule} from '../poll/poll-shared.module';
 import {OrgService} from './org.service';
+import {OrgDetailResolver} from './org-detail.resolver';
 
 
 @NgModule({
@@ -25,7 +26,8 @@ export class OrgSharedModule {
     return {
       ngModule: OrgSharedModule,
       providers: [
-        OrgService
+        OrgService,
+        OrgDetailResolver
       ]
     };
   }

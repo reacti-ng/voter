@@ -1,7 +1,7 @@
-import {createFeatureSelector} from '@ngrx/store';
+import {Action, createFeatureSelector} from '@ngrx/store';
 import {createEntityAdapter, EntityState} from '@ngrx/entity';
 import {Poll} from './poll.model';
-import {ADD_MANY_POLLS, ADD_POLL, PollAction} from './poll.action';
+import {ADD_MANY_POLLS, ADD_POLL, isPollAction, PollAction} from './poll.action';
 
 export interface PollState extends EntityState<Poll> {
 }
@@ -14,7 +14,10 @@ export const PollState = {
   fromRoot: createFeatureSelector<PollState>('features.poll')
 };
 
-export function reducePollState(state: PollState = initialPollState, action: PollAction) {
+export function reducePollState(state: PollState = initialPollState, action: Action) {
+  if (!isPollAction(action)) {
+    return state;
+  }
   switch (action.type) {
     case ADD_POLL:
       return pollStateAdapter.addOne(action.poll, state);
