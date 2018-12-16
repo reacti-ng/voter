@@ -38,7 +38,7 @@ export class UserService extends ModelService<User> {
   }
 
   getLoginUser(): Observable<User> {
-    return this.http.post('/api/user/$implicit', {}).pipe(
+    return this.http.post('/api/user/implicit/', {}).pipe(
       fromJson({ifObj: User.fromJson})
     );
   }

@@ -24,15 +24,12 @@ export class UserEffects {
     filter(action => this.authService.appForKey(action.app) === this.authService.defaultApp),
     switchMap(action => {
       if (action.token === undefined) {
-        return [action, new SetLoginUserId(undefined)];
+        return [new SetLoginUserId(undefined)];
       }
 
       // The user is logged in, get access to the user
       const user$ = this.userService.getLoginUser();
-      return concat(
-        of(action),
-        user$.pipe(concatMap(user => [new UpsertUser(user), new SetLoginUserId(user.id)]))
-      );
+      return user$.pipe(concatMap(user => [new UpsertUser(user), new SetLoginUserId(user.id)]));
     })
   );
 
