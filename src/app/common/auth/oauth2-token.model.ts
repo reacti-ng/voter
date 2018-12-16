@@ -8,7 +8,7 @@ import {JsonObject} from '../json/json.model';
 
 export interface OAuth2Token {
   readonly accessToken: string;
-  readonly tokenType: 'bearer';
+  readonly tokenType: 'Bearer';
   readonly expiresIn: number;
   readonly refreshToken: string;
   readonly scope: Set<string>;
@@ -16,7 +16,7 @@ export interface OAuth2Token {
 
 function oauth2TokenFromJson(json: JsonObject): OAuth2Token {
   return JsonObject.fromJson<OAuth2Token>({
-    tokenType: () => 'bearer',
+    tokenType: () => 'Bearer',
     accessToken: ({access_token}) => {
       if (typeof access_token !== 'string') {
         throw notAStringError('access_token', access_token);
@@ -47,7 +47,7 @@ function oauth2TokenFromJson(json: JsonObject): OAuth2Token {
 export const OAuth2Token = {
   toJson: function (token: OAuth2Token) {
     return {
-      token_type: 'bearer',
+      token_type: 'Bearer',
       access_token: token.accessToken,
       expires_in: token.expiresIn,
       refresh_token: token.refreshToken,
