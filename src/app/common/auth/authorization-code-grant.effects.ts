@@ -10,12 +10,12 @@ import {
   SetAuthToken,
   SetLoginRedirect
 } from './auth.actions';
-import {catchError, concatMap, filter, first, map, startWith, switchMap, switchMapTo, tap} from 'rxjs/operators';
+import {catchError, concatMap, filter, first, ignoreElements, map, startWith, switchMap, switchMapTo, tap} from 'rxjs/operators';
 import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
 import {DOCUMENT} from '@angular/common';
 import {Router} from '@angular/router';
 import {AuthService} from './auth.service';
-import {concat, Observable, of, throwError, zip} from 'rxjs';
+import {concat, EMPTY, Observable, of, throwError, zip} from 'rxjs';
 import {AuthorizationCodeGrantApplication} from './application.model';
 import {Action} from '@ngrx/store';
 import {HttpResponse} from '@angular/common/http';
@@ -45,7 +45,8 @@ export class AuthorizationCodeGrantEffects {
         saveRedirectCommands(window.localStorage, app);
         window.location.href = `/login?${httpParams}`;
       }
-    })
+    }),
+    ignoreElements()
   );
 
   @Effect({dispatch: false})
@@ -57,12 +58,14 @@ export class AuthorizationCodeGrantEffects {
       if (window) {
         window.location.href = `${action.redirectUri}?${httpParams}`;
       }
-    })
+    }),
+    ignoreElements()
   );
 
   @Effect()
   readonly authorizationCodeFlowTokenExchange$ = this.action$.pipe(
     ofType<AuthorizationCodeGrantTokenExchange>(AUTHORIZATION_CODE_GRANT_TOKEN_EXCHANGE),
+    filter(codeGrantExchange => !!codeGrantExchange.app),
     switchMap(action => {
       const app = this.authService.appForKey(action.app);
       if (app.type !== 'authorization-code-grant') {
@@ -70,10 +73,7 @@ export class AuthorizationCodeGrantEffects {
       }
 
       const setLoginRedirect$ = loadLoginRedirectAction(this.document.defaultView, app);
-      const setAuthToken$ = app.authFlowState$.pipe(
-        filter(state => !!state.authCodeGrantInProgress),
-        first(),
-        switchMap(() => app.exchangeAuthCodeForToken(action.response)),
+      const setAuthToken$ = app.exchangeAuthCodeForToken(action.response).pipe(
         map((token) => new SetAuthToken(token, {app: app.name})),
         catchError(err => {
           if (err instanceof HttpResponse && err.status === 401) {
@@ -81,7 +81,7 @@ export class AuthorizationCodeGrantEffects {
             return of(new SetAuthToken(undefined, {app: app.name}));
           }
           return throwError(err);
-        }),
+        })
       );
 
       return concat(
@@ -109,5 +109,5 @@ function loadLoginRedirectAction(window: Window | null, app: AuthorizationCodeGr
       }
     }
   }
-  return of(new SetLoginRedirect(['/user'], {app: app.name}));
+  return of(new SetLoginRedirect(['/public'], {app: app.name}));
 }
