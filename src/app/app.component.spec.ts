@@ -1,12 +1,31 @@
 import { TestBed, async } from '@angular/core/testing';
 import { AppComponent } from './app.component';
+import {RouterTestingModule} from '@angular/router/testing';
+import {CommonModule} from '@angular/common';
+import {ContainerModule} from './core/container/container.module';
+import {StoreModule} from '@ngrx/store';
+import {AuthService} from './common/auth/auth.service';
+import {Injectable} from '@angular/core';
+
+@Injectable()
+class MockAuthService {
+}
 
 describe('AppComponent', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [
-        AppComponent
+      imports: [
+        CommonModule,
+        StoreModule.forRoot({ }),
+        RouterTestingModule,
+        ContainerModule
       ],
+      declarations: [
+        AppComponent,
+      ],
+      providers: [
+        {provide: AuthService, useClass: MockAuthService}
+      ]
     }).compileComponents();
   }));
 
@@ -20,12 +39,5 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.debugElement.componentInstance;
     expect(app.title).toEqual('voter');
-  });
-
-  it('should render title in a h1 tag', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.debugElement.nativeElement;
-    expect(compiled.querySelector('h1').textContent).toContain('Welcome to voter!');
   });
 });
