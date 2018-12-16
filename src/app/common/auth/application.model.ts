@@ -1,13 +1,14 @@
 import * as uuid from 'uuid';
 import {InjectionToken} from '@angular/core';
-import {EMPTY, Observable, of} from 'rxjs';
+import {EMPTY, Observable, of, race, throwError} from 'rxjs';
 import {ApplicationState, AuthorizationCodeGrantState, isAuthorizationCodeGrantState} from './application.state';
 import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
-import {HttpClient, HttpParams, HttpRequest} from '@angular/common/http';
+import {HttpClient, HttpErrorResponse, HttpParams, HttpRequest, HttpResponse} from '@angular/common/http';
 import {OAuth2Token} from './oauth2-token.model';
 import {fromJson} from '../json/from-json.operator';
-import {concatMap, exhaustMap, filter, first, flatMap, map, switchMap} from 'rxjs/operators';
+import {catchError, concatMap, distinctUntilChanged, exhaustMap, filter, first, flatMap, map, switchMap} from 'rxjs/operators';
 import {select} from '@ngrx/store';
+import {isNotUndefined} from '../common.types';
 
 export interface PublicGrantApplicationConfig {
   readonly type: 'public';
@@ -66,9 +67,8 @@ export abstract class ApplicationBase {
 export class PublicGrantApplication extends ApplicationBase {
   readonly type = 'public';
   readonly config = this as PublicGrantApplicationConfig;
-  readonly state$: Observable<ApplicationState> = EMPTY;
+  readonly state$: Observable<ApplicationState> = of(ApplicationState.initial(this.name));
   constructor(readonly http: HttpClient, readonly name: string) { super(); }
-
 }
 
 export class ResourceOwnerPasswordGrantApplication extends ApplicationBase {
@@ -83,7 +83,6 @@ export class ResourceOwnerPasswordGrantApplication extends ApplicationBase {
     super();
   }
 
-
   /**
    * An active resource owner grant can request access on behalf of the specified client id.
    *
@@ -91,20 +90,24 @@ export class ResourceOwnerPasswordGrantApplication extends ApplicationBase {
    */
   requestAuthorizationCodeForClientId(request: AuthorizationCodeGrantRequest): Observable<AuthorizationCodeGrantResponse> {
     const token$ = this.state$.pipe(map(state => state.token));
+    const grantAuthCodeUrl = this.config.grantAuthCodeUrl;
+    if (grantAuthCodeUrl === undefined) {
+      return throwError(new Error(`No 'grantAuthCodeUrl' configured for ${this.name}`));
+    }
+
     return token$.pipe(
       first(),
       switchMap(token => {
         if (token === undefined) {
           throw new Error(`Must be logged in in order to request an access token`);
         }
-
         const body = AuthorizationCodeGrantRequest.toHttpParams(request);
 
         // Call the user/auth_code with the resource owner grant.
         // This is the _only_ api endpoint which accepts authorization using the resource owner app
         return this.getAuthorizeHeaders().pipe(
           flatMap(authHeaders => {
-            return this.http.post('http://localhost:8000/api/user/grant_auth_code/', body, {
+            return this.http.post(grantAuthCodeUrl, body, {
               headers: {
                 ...authHeaders,
                 'content-type': 'application/x-www-form-urlencoded'
@@ -118,7 +121,7 @@ export class ResourceOwnerPasswordGrantApplication extends ApplicationBase {
     );
   }
 
-  requestGrant(credentials: {username: string, password: string}): Observable<OAuth2Token> {
+  requestGrant(credentials: {username: string, password: string}): Observable<OAuth2Token | undefined> {
     const grantRequest = new HttpParams({
       fromObject: {
         grant_type: 'password',
@@ -135,14 +138,19 @@ export class ResourceOwnerPasswordGrantApplication extends ApplicationBase {
       },
       responseType: 'json'
     }).pipe(
-      fromJson({ifObj: OAuth2Token.fromJson})
+      fromJson({ifObj: OAuth2Token.fromJson}),
+      catchError(err => {
+        if (err instanceof HttpErrorResponse && err.status === 401) {
+          return of(undefined);
+        }
+        return throwError(err);
+      })
     );
   }
 }
 
 export class AuthorizationCodeGrantApplication extends ApplicationBase {
   readonly type = 'authorization-code-grant';
-  private readonly state = uuid.v4().substr(28);
   constructor(
     readonly http: HttpClient,
     readonly name: string,
@@ -157,22 +165,29 @@ export class AuthorizationCodeGrantApplication extends ApplicationBase {
   ) as Observable<ApplicationState & AuthorizationCodeGrantState>;
 
   get loginRedirect$() {
-    return this.authFlowState$.pipe(map(state => state.loginRedirect));
+    return this.authFlowState$.pipe(map(state => state.loginRedirect), distinctUntilChanged());
   }
 
-  exchangeAuthCodeForToken(response: AuthorizationCodeGrantResponse): Observable<OAuth2Token> {
+  exchangeAuthCodeForToken(response: AuthorizationCodeGrantResponse): Observable<OAuth2Token | undefined> {
     const grantRequest = new HttpParams({
       fromObject: {
         grant_type: 'authorization_code',
         code: response.code,
+        state: response.state,
         redirect_uri: this.config.redirectUri,
         client_id: this.config.clientId,
       }
-    }).toString();
+    });
     return this.http.post(this.config.tokenUrl, grantRequest, {
       headers: {'content-type': 'application/x-www-form-urlencoded'}
     }).pipe(
-      fromJson({ifObj: OAuth2Token.fromJson})
+      fromJson({ifObj: OAuth2Token.fromJson}),
+      catchError((err: any) => {
+        if (err instanceof HttpErrorResponse && err.status === 401) {
+          return of(undefined);
+        }
+        return throwError(err);
+      })
     );
   }
 

@@ -18,14 +18,16 @@ export const environment = {
       // FIXME: login page need to be supplied these more securely.
       // OK for development purposes to have them here.
       clientId: 'bnha97rsOV4HEpUPtbBwLLQSdptDPLhIEE5dnfXR',
-      clientSecret: 'IErRaaFBTXj9YoksHi5EVto8MGPkjtf0zvdTBmVb8K0uEzZ1OEdkDNShrJDg2xJBHXRLiXgRuCQhbjqqPOjWdcBS1SGE9XdB41KcEtMz5nMWzYx8tVzCUxp7MPKaZEPs'
+      clientSecret: 'IErRaaFBTXj9YoksHi5EVto8MGPkjtf0zvdTBmVb8K0uEzZ1OEdkDNShrJDg2xJBHXRLiXgRuCQhbjqqPOjWdcBS1SGE9XdB41KcEtMz5nMWzYx8tVzCUxp7MPKaZEPs',
+
+      grantAuthCodeUrl: '/api/user/grant_auth_code/',
     },
     org: {
       type: 'authorization-code-grant' as 'authorization-code-grant',
       tokenUrl: 'http://localhost:8000/auth/token/',
       redirectUri: 'http://localhost:4200/',
       clientId: 'EnxDClOfU2BVV1Ze6zwM0uxcwi6l9nRX9yvfS2hB',
-      scope: 'user org read write edit'
+      scope: 'user org read write'
     }
   }
 };
