@@ -39,7 +39,7 @@ export const ApplicationState = {
     refreshedAt: new Date(Date.now()),
     isTokenPersistenceEnabled: false,
     loginRedirect: ['/public']
-  }),
+  } as ApplicationState & AuthorizationCodeGrantState),
 
   selectToken: (authState: ApplicationState) => authState.token,
   selectAccessToken: (appState: ApplicationState) => appState.token && appState.token.accessToken,

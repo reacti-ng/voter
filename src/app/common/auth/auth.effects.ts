@@ -7,7 +7,7 @@ import {concatMap, filter, map} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
 import {Actions, Effect, ofType} from '@ngrx/effects';
 
-import {isAuthAction, SET_AUTH_TOKEN, SetAuthToken, StoreAuthToken} from './auth.actions';
+import {cloneAuthAction, isAuthAction, SET_AUTH_TOKEN, SetAuthToken, StoreAuthToken} from './auth.actions';
 import {AUTH_DEFAULT_APPLICATION} from './application.model';
 
 
@@ -31,10 +31,7 @@ export class AuthEffects {
   readonly provideDefaultApp$ = this.action$.pipe(
     filter(isAuthAction),
     filter(action => action.app === undefined),
-    map(action => {
-      console.log('providing default app');
-      return ({type: action.type, ...action, app: this.defaultAppId});
-    })
+    map(action => cloneAuthAction(action, {app: this.defaultAppId}))
   );
 
 

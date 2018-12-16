@@ -105,3 +105,25 @@ export function isAuthAction(obj: any): obj is AuthAction {
     SET_TOKEN_PERSISTENCE_IS_ENABLED
   ].includes(obj.type);
 }
+
+export function cloneAuthAction(action: AuthAction, update?: {app?: string}) {
+  const app = update && update.app;
+  switch (action.type) {
+    case SET_AUTH_TOKEN:
+      return new SetAuthToken(action.token, {useTimestamp: action.useTimestamp, app});
+    case SET_LOGIN_REDIRECT:
+      return new SetLoginRedirect(action.redirect, {app});
+    case AUTHORIZATION_CODE_GRANT_BEGIN:
+      return new BeginAuthorizationCodeGrant(action.request, {app});
+    case AUTHORIZATION_CODE_GRANT_REDIRECT:
+      return new AuthorizationCodeGrantRedirect(action.redirectUri, action.response, {app});
+    case AUTHORIZATION_CODE_GRANT_TOKEN_EXCHANGE:
+      return new AuthorizationCodeGrantTokenExchange(action.response, {app});
+    case REFRESH_TOKEN:
+      return new RefreshToken({app});
+    case STORE_AUTH_TOKEN:
+      return new StoreAuthToken({app});
+    case SET_TOKEN_PERSISTENCE_IS_ENABLED:
+      return new SetTokenPersistenceIsEnabled(action.isEnabled, {app});
+  }
+}
