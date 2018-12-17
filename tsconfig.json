@@ -16,7 +16,12 @@
       "node_modules/@types"
     ],
     "paths": {
-      "app/*": ["/src/app"]
+      "app/*": [
+        "/src/app"
+      ],
+      "json-pointer": [
+        "dist/json-pointer"
+      ]
     },
     "lib": [
       "es2018",
