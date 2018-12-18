@@ -1,20 +1,20 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {PollTimelineCardComponent} from './timeline-card/timeline-card.component';
 import {PollService} from './poll.service';
-import {PollTimelineComponent} from './timeline/timeline.component';
+import {PollTimelineModule} from './timeline/timeline.module';
+import {PollCreateComponent} from './create/create.component';
 
 
 @NgModule({
   imports: [
-    CommonModule
+    CommonModule,
+    PollTimelineModule
   ],
   declarations: [
-    PollTimelineCardComponent,
-    PollTimelineComponent
+    PollCreateComponent
   ],
   exports: [
-    PollTimelineComponent
+    PollTimelineModule
   ]
 })
 export class PollSharedModule {

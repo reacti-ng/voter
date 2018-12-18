@@ -1,11 +1,8 @@
-import {Component, Input, NgModule, OnDestroy} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {PollTimelineCardComponent} from '../timeline-card/timeline-card.component';
-import {BehaviorSubject, Observable} from 'rxjs';
-import {List} from 'immutable';
-import {PollService} from '../poll.service';
-import {Poll} from '../poll.model';
+import {Component, Input, OnDestroy} from '@angular/core';
+import {BehaviorSubject} from 'rxjs';
 import {map, switchMap} from 'rxjs/operators';
+
+import {PollService} from '../poll.service';
 
 @Component({
   selector: 'app-poll-timeline',
