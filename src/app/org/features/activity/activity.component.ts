@@ -23,4 +23,8 @@ export class OrgActivityPageComponent {
     select(createSelector(OrgState.fromRoot, OrgState.detail))
   ) as Observable<Org> /* otherwise it would be 404 */;
 
+  readonly pollFilter$ = this.detail$.pipe(
+    map(org => ({org: org.id}))
+  );
+
 }

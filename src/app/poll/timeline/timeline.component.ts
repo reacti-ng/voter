@@ -20,7 +20,7 @@ export class PollTimelineComponent implements OnDestroy {
   }
 
   readonly pages$ = this.filtersSubject.pipe(map(filter => this.pollService.timeline({params: filter})));
-  readonly poll$ = this.pages$.pipe(switchMap(pagination => pagination.results$));
+  readonly polls$ = this.pages$.pipe(switchMap(pagination => pagination.results$));
 
   constructor(
     readonly pollService: PollService
