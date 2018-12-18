@@ -1,68 +1,47 @@
-import {Ballot} from '../ballot/ballot.model';
-import {ModelRef} from '../common/model/model-ref.model';
+import {Ballot, ballotFromJson} from '../ballot/ballot.model';
+import {ModelRef, modelRefFromJson, modelRefProperty} from '../common/model/model-ref.model';
 import {JsonAny, JsonObject} from '../common/json/json.model';
-import {DateTime} from '../common/date/date-time.model';
+import {DateTime, dateTimeFromJson} from '../common/date/date-time.model';
 import {Ident} from '../common/model/ident.model';
+import {Proposal, proposalFromJson} from '../proposal/proposal.model';
+import {fromJsonAny, fromJsonObject} from '../common/json/decoder';
 
 
 export interface Poll {
   readonly id: string;
   readonly name: string;
 
+  readonly proposal: ModelRef<Proposal>;
   readonly ballot: ModelRef<Ballot>;
 
   readonly createAt: Date;
-  readonly openAt: Date;
-  readonly closeAt: Date;
-  readonly countAt: Date;
+  readonly openAt: Date | null;
+  readonly closeAt: Date | null;
+  readonly countAt: Date | null;
 
   // Only visible in full poll details
-  readonly ballotIssuerId?: string;
+  readonly ballotIssuerId: string | null;
 }
 
-export const Poll = {
-  fromJson: (json: JsonObject) => JsonObject.fromJson<Poll>({
-    id: () => Ident.fromJson(json).id,
-    name: ({name}) => {
-      if (typeof name !== 'string') {
-        throw new Error('JSON poll has no \'name\' (${poll})');
-      }
-      return name;
-    },
-    createAt: ({create_at}) => {
-      if (typeof create_at !== 'string') {
-        throw new Error('JSON has no date-like \'created_at\'');
-      }
-      return DateTime.fromJson(create_at);
-    },
-    ballot: ({ballot}) => ModelRef.fromJson(Ballot.fromJson, ballot as JsonAny),
-    openAt: ({open_at}) => {
-      if (typeof open_at !== 'string') {
-        throw new Error('JSON has no date-like \'open_at\'');
-      }
-      return DateTime.fromJson(open_at);
-    },
-    closeAt: ({close_at}) => {
-      if (typeof close_at !== 'string') {
-        throw new Error('JSON has no date-like \'close_at\'');
-      }
-      return DateTime.fromJson(close_at);
-    },
-    countAt: ({count_at}) => {
-      if (typeof count_at !== 'string') {
-        throw new Error('JSON has no date-like \'count_at\'');
-      }
-      return DateTime.fromJson(count_at);
-    }
-  }, json),
-  toJson: function(poll: Poll): JsonObject {
-    return {
-      id: poll.id,
-      create_at: poll.createAt.toISOString(),
-      open_at: poll.openAt.toISOString(),
-      close_at: poll.closeAt.toISOString(),
-      count_at: poll.countAt.toISOString()
-    };
-  }
-};
+export const pollFromJson = fromJsonObject<Poll>({
+  id:       {string: true, ifNull: 'throw'},
+  name:     {string: true, ifNull: 'throw'},
+  ballot:   {...modelRefProperty(ballotFromJson), ifNull: 'throw'},
+  proposal: {...modelRefProperty(proposalFromJson), ifNull: 'throw'},
+  createAt: {source: 'created_at', string: dateTimeFromJson, ifNull: 'throw'},
+  openAt:   {source: 'open_at', string: dateTimeFromJson },
+  closeAt:  {source: 'close_at', string: dateTimeFromJson },
+  countAt:  {source: 'count_at', string: dateTimeFromJson },
+
+  ballotIssuerId: {source: 'ballot_issuer_id', string: true, ifNull: null}
+});
+export function pollToJson(poll: Poll): JsonObject {
+  return {
+    id: poll.id,
+    create_at: poll.createAt.toISOString(),
+    open_at: poll.openAt && poll.openAt.toISOString(),
+    close_at: poll.closeAt && poll.closeAt.toISOString(),
+    count_at: poll.countAt && poll.countAt.toISOString()
+  };
+}
 

@@ -1,5 +1,14 @@
 import {Inject, Injectable} from '@angular/core';
+import {DOCUMENT} from '@angular/common';
+import {HttpResponse} from '@angular/common/http';
+import {Router} from '@angular/router';
+
+import {Action} from '@ngrx/store';
 import {Actions, Effect, ofType} from '@ngrx/effects';
+
+import {concat, Observable, of, throwError} from 'rxjs';
+import {catchError, filter, first, ignoreElements, map, switchMap, tap} from 'rxjs/operators';
+
 import {
   AUTHORIZATION_CODE_GRANT_BEGIN,
   AUTHORIZATION_CODE_GRANT_REDIRECT,
@@ -10,15 +19,9 @@ import {
   SetAuthToken,
   SetLoginRedirect
 } from './auth.actions';
-import {catchError, concatMap, filter, first, ignoreElements, map, startWith, switchMap, switchMapTo, tap} from 'rxjs/operators';
-import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
-import {DOCUMENT} from '@angular/common';
-import {Router} from '@angular/router';
+import {authorizationCodeGrantRequestToHttpParams, authorizationCodeGrantResponseToHttpParams} from './authorization-code-grant.model';
 import {AuthService} from './auth.service';
-import {concat, EMPTY, Observable, of, throwError, zip} from 'rxjs';
 import {AuthorizationCodeGrantApplication} from './application.model';
-import {Action} from '@ngrx/store';
-import {HttpResponse} from '@angular/common/http';
 
 
 @Injectable()
@@ -39,7 +42,7 @@ export class AuthorizationCodeGrantEffects {
         throw new Error(`App is not a code grant application`);
       }
 
-      const httpParams = AuthorizationCodeGrantRequest.toHttpParams(action.request);
+      const httpParams = authorizationCodeGrantRequestToHttpParams(action.request);
       const window = this.document.defaultView;
       if (window) {
         saveRedirectCommands(window.localStorage, app);
@@ -53,7 +56,7 @@ export class AuthorizationCodeGrantEffects {
   readonly authorizationCodeFlowRedirect$ = this.action$.pipe(
     ofType<AuthorizationCodeGrantRedirect>(AUTHORIZATION_CODE_GRANT_REDIRECT),
     tap(action => {
-      const httpParams = AuthorizationCodeGrantResponse.toHttpParams(action.response);
+      const httpParams = authorizationCodeGrantResponseToHttpParams(action.response);
       const window = this.document.defaultView;
       if (window) {
         window.location.href = `${action.redirectUri}?${httpParams}`;

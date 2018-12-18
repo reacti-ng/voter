@@ -1,12 +1,13 @@
 import {List, Set} from 'immutable';
-import {User} from '../user/user.model';
+import {JsonPointer} from 'json-pointer';
 
-import {differenceInSeconds, parse as parseDate} from 'date-fns';
-import {Org} from '../org/org.model';
-import {ModelRef} from '../common/model/model-ref.model';
-import {isJsonObject, JsonObject} from '../common/json/json.model';
-import {isString, Mutable} from '../common/common.types';
-import {DateTime} from '../common/date/date-time.model';
+import {ModelRef, modelRefFromJson, modelRefToJson} from '../common/model/model-ref.model';
+import {dateTimeFromJson} from '../common/date/date-time.model';
+import {fromJsonAny, fromJsonArray, fromJsonObject} from '../common/json/decoder';
+import {JsonArray, JsonObject} from '../common/json/json.model';
+
+import {User, userFromJson} from '../user/user.model';
+import {Org, orgFromJson} from '../org/org.model';
 
 export interface Proposal {
   readonly id: string;
@@ -22,56 +23,67 @@ export interface Proposal {
   readonly isNominated: boolean;
 }
 
-function proposalFromJson(json: JsonObject): Proposal {
-  const result: Mutable<Proposal> = {};
 
-  const {id, groups} = json;
-  if (typeof id !== 'string') {
-    throw new Error(`Object has no id: ${json}`);
-  }
-  result.id = id;
-  if (Array.isArray(groups)) {
-    result.orgs = Set(groups.map((group) => ModelRef.fromJson(Org.fromJson, group)));
-  }
+const nomineesFromJson = fromJsonAny<List<ModelRef<User>>>({
 
-  const {by, nominees} = json;
-  if (isString(by) || isJsonObject(by)) {
-    result.by = ModelRef.fromJson(User.fromJson, by);
-  }
-  if (Array.isArray(nominees)) {
-    result.nominees = List(nominees.map(nominee => ModelRef.fromJson(User.fromJson, nominee)));
-  }
+});
 
-  const {voteAt, proposedAt, countAt} = json;
-  if (isString(voteAt)) {
-    result.voteAt = parseDate(voteAt);
+export const proposalFromJson = fromJsonObject<Proposal>({
+  id: {string: true, ifNull: 'throw'},
+  orgs: {
+    source: 'groups',
+    array: (json: JsonArray, pointer?: JsonPointer) => {
+      const groupArr = fromJsonArray(modelRefFromJson(orgFromJson))(json, pointer);
+      return Set(groupArr);
+    },
+    ifNull: Set<Org>(),
+  },
+  by: {
+    object: modelRefFromJson(userFromJson),
+    ifNull: 'throw'
+  },
+  nominees: {
+    array: (json: JsonArray, pointer?: JsonPointer) => {
+      const groupArr = fromJsonArray(modelRefFromJson(userFromJson))(json, pointer);
+      return List(groupArr);
+    },
+    ifNull: List()
+  },
+  isNominated: {
+    source: 'nominees',
+    array: (arr: JsonArray) => arr.length > 1
+  },
+  voteAt: {
+    source: 'vote_at',
+    string: dateTimeFromJson,
+    ifNull: 'throw'
+  },
+  proposedAt: {
+    source: 'proposed_at',
+    string: dateTimeFromJson,
+    ifNull: 'throw'
+  },
+  countAt: {
+    string: dateTimeFromJson,
+    ifNull: 'throw'
+  },
+  description: {
+    string: true,
+    ifNull: 'throw'
   }
-  if (isString(proposedAt)) {
-    result.proposedAt = parseDate(proposedAt);
-  }
-  if (isString(countAt)) {
-    result.countAt = parseDate(countAt);
-  }
-
-  const {description} = json;
-  if (typeof description === 'string') {
-    result.description = description;
-  }
-
-  return result as Proposal;
-}
+});
 
 function proposalToJson(proposal: Partial<Proposal>): JsonObject {
   return {
     id: proposal.id || null,
-    groups: (proposal.orgs || Set()).map((group) => ModelRef.toJson(group)),
+    groups: (proposal.orgs || Set()).map((group) => modelRefToJson()(group)),
     proposedAt: proposal.proposedAt && proposal.proposedAt.toISOString() || null,
     voteAt: proposal.voteAt && proposal.voteAt.toISOString() || null,
     countAt: proposal.countAt && proposal.countAt.toISOString() || null,
     description: proposal.description || null,
 
-    by: proposal.by && ModelRef.toJson(proposal.by) || null,
-    nominees: (proposal.nominees && proposal.nominees.map(nominee => ModelRef.toJson(nominee))) || null
+    by: proposal.by && modelRefToJson()(proposal.by) || null,
+    nominees: (proposal.nominees && proposal.nominees.map(nominee => modelRefToJson()(nominee))) || null
   };
 }
 
@@ -90,10 +102,11 @@ export interface ProposalCreateRequest {
 export const ProposalCreateRequest = {
   toJson: function (createRequest: ProposalCreateRequest): JsonObject {
     return {
-      orgs: createRequest.orgs.map(ModelRef.toJson).toArray(),
+      orgs: createRequest.orgs.map(modelRefToJson()).toArray(),
       description: createRequest.description,
-      voteAt: createRequest.voteAt && DateTime.toJson(createRequest.voteAt)
+      voteAt: createRequest.voteAt && createRequest.voteAt.toISOString()
     };
   }
 };
+
 

@@ -9,7 +9,10 @@ import {of, Subscription, throwError} from 'rxjs';
 import {catchError, distinctUntilChanged, filter, first, map, shareReplay, startWith, switchMap, switchMapTo, tap} from 'rxjs/operators';
 
 import {AuthorizationCodeGrantRedirect, SetAuthToken, SetTokenPersistenceIsEnabled} from '../../../common/auth/auth.actions';
-import {AuthorizationCodeGrantRequest} from '../../../common/auth/authorization-code-grant.model';
+import {
+  AuthorizationCodeGrantRequest,
+  authorizationCodeGrantRequestFromQueryParams
+} from '../../../common/auth/authorization-code-grant.model';
 import {AuthService} from '../../../common/auth/auth.service';
 import {isNotUndefined} from '../../../common/common.types';
 import {ResourceOwnerPasswordGrantApplication} from '../../../common/auth/application.model';
@@ -46,7 +49,7 @@ export class UserLoginPageComponent implements OnInit, OnDestroy {
 
 
   readonly codeGrantRequest$ = this.activatedRoute.queryParamMap.pipe(
-    map(queryMap => AuthorizationCodeGrantRequest.fromQueryParams(queryMap)),
+    map(queryMap => authorizationCodeGrantRequestFromQueryParams(queryMap)),
     shareReplay(1)
   );
   private codeGrantRequestSubscription = this.codeGrantRequest$.subscribe();

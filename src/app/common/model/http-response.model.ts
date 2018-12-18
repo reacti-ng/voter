@@ -1,15 +1,22 @@
-import {
-  isJsonObject,
-  JsonDocument,
-  JsonObject, notAJsonArrayError,
-  notAJsonObjectError
-} from '../json/json.model';
-import {isNumber, isString, notANumberError, notAStringError} from '../common.types';
+import {OperatorFunction} from 'rxjs';
+import {map} from 'rxjs/operators';
+import {JsonPointer} from 'json-pointer';
+
+import {fromJsonAny, fromJsonArray, fromJsonObject, JsonDecoder} from '../json/decoder';
+import {JsonAny, JsonArray, JsonObject,} from '../json/json.model';
 
 export type Response<T> = SingleResponse<T> | SimplePageResponse<T> | NumberedPageResponse<T> | CursorPageResponse<T> | ErrorResponse;
 
 export type SingleResponse<T> = T;
-export const SingleResponse = { fromJson: JsonDocument.fromJson };
+export function singleResponseFromJson<T>(decodeResult: JsonDecoder<JsonObject, T>): OperatorFunction<JsonObject | object, T> {
+  return map((json) => fromJsonAny<T>({
+    object: decodeResult,
+    ifNull: () => {
+      throw new Error(`null cannot be at the root of a json document`);
+    }
+  })(json));
+}
+
 
 export type PaginationType = 'page-number' | 'cursor' | 'none';
 
@@ -18,24 +25,19 @@ export interface SimplePageResponse<T> {
   readonly paginationType: 'none';
   readonly results: T[];
 }
-export const SimplePageResponse = {
-  fromJson: <T>(decodeResult: (json: JsonObject) => T, json: JsonObject) => {
-    return JsonObject.fromJson<SimplePageResponse<T>>({
-      paginationType: () => 'none',
-      results: ({results}) => {
-        if (Array.isArray(results)) {
-          const errObj = results.find(result => !isJsonObject(result));
-          if (errObj !== undefined) {
-            throw notAJsonObjectError(errObj);
-          }
-          return results.map(result => decodeResult(result as JsonObject));
-        } else {
-          throw notAJsonArrayError(results);
-        }
-      }
-    }, json);
-  }
-};
+function resultsFromJson<T>(decodeResult: JsonDecoder<JsonObject, T>, pointer?: JsonPointer): JsonDecoder<JsonArray, T[]> {
+  return fromJsonArray(fromJsonAny({object: decodeResult, ifNull: 'throw'}, pointer));
+}
+
+export function simplePageResponseFromJson<T>(decodeResult: JsonDecoder<JsonObject, T>): OperatorFunction<JsonAny, SimplePageResponse<T>> {
+  return map((json) => fromJsonAny({
+    object: fromJsonObject<SimplePageResponse<T>>({
+      paginationType: {value: 'none'},
+      results: {array: resultsFromJson(decodeResult), ifNull: 'throw'}
+    }),
+    ifNull: 'throw'
+  })(json));
+}
 
 
 /** For stable result sets, not large, but stable and not often edited */
@@ -53,37 +55,59 @@ export interface NumberedPageResponse<T> {
   readonly previous: string | null;
 }
 
-export const NumberedPageResponse = {
-  fromJson: <T>(decodeResult: (json: JsonObject) => T, json: JsonObject) => {
-    return JsonObject.fromJson<NumberedPageResponse<T>>({
-      paginationType: () => 'page-number',
-      results: () => SimplePageResponse.fromJson(decodeResult, json).results,
-      pageNumber: ({number}) => {
-        if (!isNumber(number)) { throw notANumberError('pageNumber', json); }
-        return number;
+export function numberedPageResponseFromJson<T>(
+  decodeResult: JsonDecoder<JsonObject, T>
+): OperatorFunction<JsonAny | object, NumberedPageResponse<T>> {
+  return map(json => fromJsonAny<NumberedPageResponse<T>>({
+    object: fromJsonObject<NumberedPageResponse<T>>({
+      paginationType: {
+        value: 'page-number'
       },
-      pageTotal: ({number}) => {
-        if (!isNumber(number)) { throw notANumberError('pageTotal', json); }
-        return number;
+      results: {
+        array: resultsFromJson(decodeResult)
       },
-      count: ({count}) => {
-        if (!isNumber(count)) { throw notANumberError('count', json); }
-        return count;
+      pageNumber: {
+        source: 'number',
+        number: true,
+        ifNull: 'throw'
       },
-      next: ({next}) => {
-        if (next != null && !isString(next)) { throw notAStringError('next', json); }
-        return next;
+      pageTotal: {
+        source: 'total',
+        number: true,
+        ifNull: 'throw'
       },
-      previous: ({previous}) => {
-        if (previous != null && !isString(previous)) { throw notAStringError('previous', json); }
-        return previous;
+      count: {
+        source: 'count',
+        number: true,
+        ifNull: 'throw'
+      },
+      next: {
+        string: true,
+        ifNull: null
+      },
+      previous: {
+        string: true,
+        ifNull: null
       }
-    }, json);
-  }
-};
+    }),
+    ifNull: 'throw'
+  })(json));
+}
 
-export interface CursorPageResponse<T> extends SimplePageResponse<T> {
-  readonly pageType: 'cursor';
+export interface CursorPageResponse<T> {
+  readonly paginationType: 'cursor';
+
+  readonly results: T[];
+}
+
+export function cursorPageResponseFromJson<T>(decodeResult: JsonDecoder<JsonObject, T>): OperatorFunction<JsonAny | object, CursorPageResponse<T>> {
+   return map(json => fromJsonAny<CursorPageResponse<T>>({
+     object: fromJsonObject<CursorPageResponse<T>>({
+       paginationType: {value: 'cursor'},
+       results: {array: resultsFromJson(decodeResult), ifNull: 'throw'}
+     }),
+     ifNull: 'throw'
+  })(json));
 }
 
 export interface ErrorResponse {

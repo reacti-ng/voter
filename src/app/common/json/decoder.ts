@@ -1,84 +1,163 @@
-import {JsonPointer} from 'json-pointer';
-import {isJsonArray, isJsonObject, JsonAny, JsonArray, JsonObject, ObjectDecoderMap} from './json.model';
-import {isBoolean, isNull, isNumber, isString, Mutable} from '../common.types';
+/* tslint:disable: unified-signatures max-line-length */
 
-export type JsonParser<Json extends JsonAny, T> = (obj: Json, pointer?: JsonPointer) => T;
+import {JsonPointer, jsonPointerToArray} from 'json-pointer';
+import {isJsonArray, isJsonObject, JsonAny, JsonArray, JsonObject} from './json.model';
+import {isBoolean, isNumber, isString, Mutable} from '../common.types';
+import {JsonParseError} from './parse-errors';
+import {joinJsonPointer} from '../json-pointer-utils';
 
-interface FromNull<T>       { 'null'  ?: () => T;                     }
-interface FromBoolean<T>    { boolean ?: JsonParser<string, T>;    }
-interface FromString<T>     { string  ?: JsonParser<string, T>;     }
-interface FromNumber<T>     { number  ?: JsonParser<number, T>;     }
+export type JsonDecoder<Json, T> = (obj: Json, pointer?: JsonPointer) => T;
 
-interface FromObject<T>     { object  ?: JsonParser<JsonObject, T>; }
-interface FromArray<T>      { array   ?:  JsonParser<JsonObject, T>; }
 
-type FromDocument<T>  = FromObject<T> | FromArray<T>;
-type FromPrimitive<T> = FromBoolean<T> | FromString<T> | FromNumber<T>;
 
-type FromAny<T> = FromPrimitive<T> | FromDocument<T>;
+export type Default<T> = T | (() => T);
 
-type FromNullableBoolean<T>   = FromBoolean<T> & FromNull<T>;
-type FromNullableString<T>    = FromString<T> & FromNull<T>;
-type FromNullableNumber<T>    = FromNumber<T> & FromNull<T>;
-type FromNullableObject<T>    = FromObject<T> & FromNull<T>;
-type FromNullableArray<T>     = FromArray<T> & FromNull<T>;
+export interface FromAny<T> {
+  readonly ifNull?: Default<T> | 'throw' | null;
+  readonly boolean?: JsonDecoder<boolean, T> | true;
+  readonly string?: JsonDecoder<string, T> | true;
+  readonly number?: JsonDecoder<number, T> | true;
 
-type FromNullablePrimitive<T> = FromPrimitive<T> & FromNull<T>;
-type FromNullableAny<T>       = FromAny<T> & FromNull<T>;
+  readonly object?: JsonDecoder<JsonObject, T>;
+  readonly array?: JsonDecoder<JsonArray, T>;
+}
 
-export function fromObjectProperties<T>(properties: {[K in keyof T]: JsonParser<JsonObject, T[K]>}) {
-  return function (obj: JsonObject) {
+
+export function fromJsonAny<T>(_if: {string?: true, ifNull?: null}                                       , pointer?: JsonPointer): JsonDecoder<JsonAny, string | null>;
+export function fromJsonAny<T>(_if: {string?: true, ifNull?: Default<T> | 'throw' }                      , pointer?: JsonPointer): JsonDecoder<JsonAny, string>;
+
+export function fromJsonAny<T>(_if: {string?: (raw: string) => T, ifNull?: null}                         , pointer?: JsonPointer): JsonDecoder<JsonAny, T | null>;
+export function fromJsonAny<T>(_if: {string?: (raw: string) => T, ifNull?: Default<T> | 'throw'}         , pointer?: JsonPointer): JsonDecoder<JsonAny, T>;
+
+export function fromJsonAny<T>(_if: {number?: true, ifNull?: null}                                       , pointer?: JsonPointer): JsonDecoder<JsonAny, number | null>;
+export function fromJsonAny<T>(_if: {number?: true, ifNull?: Default<T> | 'throw' }                      , pointer?: JsonPointer): JsonDecoder<JsonAny, number>;
+
+export function fromJsonAny<T>(_if: {boolean?: true, ifNull?: null}                                      , pointer?: JsonPointer): JsonDecoder<JsonAny, boolean | null>;
+export function fromJsonAny<T>(_if: {boolean?: true, ifNull?: Default<T> | 'throw' }                     , pointer?: JsonPointer): JsonDecoder<JsonAny, boolean>;
+
+export function fromJsonAny<T>(_if: {object?: JsonDecoder<JsonObject, T>, ifNull?: null}                 , pointer?: JsonPointer): JsonDecoder<JsonAny, T | null>;
+export function fromJsonAny<T>(_if: {object?: JsonDecoder<JsonObject, T>, ifNull?: Default<T> | 'throw'} , pointer?: JsonPointer): JsonDecoder<any, T>;
+
+export function fromJsonAny<T>(_if: {array?: JsonDecoder<JsonArray, T>, ifNull?: null}                   , pointer?: JsonPointer): JsonDecoder<JsonAny, T | null>;
+export function fromJsonAny<T>(_if: {array?: JsonDecoder<JsonArray, T>, ifNull?: Default<T> | 'throw'}   , pointer?: JsonPointer): JsonDecoder<JsonAny, T>;
+
+export function fromJsonAny<T>(_if: FromAny<T>): JsonDecoder<JsonAny, T>;
+export function fromJsonAny<T>(_if: FromAny<T | null>): JsonDecoder<JsonAny, T | null> {
+  return function (json: JsonAny , pointer?: JsonPointer) {
+    if (json == null) {
+      return decodeNullable(_if)(json, pointer);
+    }
+    if (_if.object && isJsonObject(json)) {
+      return useDecoder(_if.object);
+    }
+    if (_if.array && isJsonArray(json)) {
+      return useDecoder(_if.array);
+    }
+    if (_if.string && isString(json)) {
+      return useDecoder(_if.string);
+    }
+    if (_if.number && isNumber(json)) {
+      return useDecoder(_if.number);
+    }
+    if (_if.boolean && isBoolean(json)) {
+      return useDecoder(_if.boolean);
+    }
+
+    if (Object.keys(_if).length === 0) {
+      throw new Error('At most one type decoder must be provided to JsonAny.fromJson');
+    }
+    const expected = [
+      _if.object ? 'JsonObject' : '',
+      _if.array ? 'JsonArray' : '',
+      _if.string ? 'string' : '',
+      _if.number ? 'number' : '',
+      _if.boolean ? 'boolean' : '',
+      _if.ifNull ? 'null' : ''
+    ].join(' | ');
+    throw new JsonParseError(expected, json, pointer);
+
+    function useDecoder(decoder: JsonDecoder<any, T | null> | true) {
+      return decoder === true ? json as unknown as T : decoder(json, pointer);
+    }
+  };
+}
+
+export function decodeNullable<T>(_if?: {ifNull?: Default<T> | 'throw' | null}): JsonDecoder<null, T | null> {
+  const ifNull = _if && _if.ifNull;
+
+  return function (json: null, pointer?: JsonPointer) {
+    if (ifNull == null) {
+      return null;
+    }
+    if (ifNull === 'throw') {
+      throw JsonParseError.unexpectedNull(pointer);
+    }
+    return ((typeof ifNull === 'function') ? (ifNull as () => T)() : ifNull) as T;
+  };
+}
+
+export function fromJsonArray<Item>(decodeItem: JsonDecoder<JsonAny, Item>, pointer?: JsonPointer): JsonDecoder<JsonArray, Item[]> {
+  return function (json: JsonArray, pointer?: JsonPointer) {
+    return json.map((item, i) => {
+      const pointer_i = joinJsonPointer(pointer || '', i.toString());
+      return decodeItem(item, pointer_i);
+    });
+  };
+}
+
+function _fromJsonObject<T>(properties: {[K in keyof T]: JsonDecoder<JsonObject, T[K]>}) {
+  return function (obj: JsonObject, pointer: JsonPointer = []) {
     const tKeys = Object.keys(properties) as (keyof T)[];
     const t: Mutable<T> = {};
 
     for (const k of tKeys) {
-      t[k] = properties[k](obj);
+      const pointer_k = [...jsonPointerToArray(pointer), k.toString()];
+      t[k] = properties[k](obj, pointer_k);
     }
     return t as T;
   };
 }
-/*
-  toJson: <T>(encodeProperties: {[k in keyof T]: (value: T[k], key?: k) => JsonObject}, t: T): JsonObject => {
-    const tKeys = Object.keys(t) as (keyof T)[];
 
-    // For each key, call `encodeProperties[key]` with the value `t[key]` and the key itself.
- const partials = tKeys.map((k) => encodeProperties[k](t[k], k));
-  return Object.assign({}, ...partials) as JsonObject;
-}
-*/
-
-
-export function fromJsonAny<T>(fromJson: FromAny<T>): JsonParser<JsonAny, T> {
-  if (decode.ifObj && isJsonObject(json)) {
-    return decode.ifObj(json);
-  }
-  if (decode.ifArr && isJsonArray(json)) {
-    return decode.ifArr(json);
-  }
-  if (decode.ifString && isString(json)) {
-    return decode.ifString(json);
-  }
-  if (decode.ifNum && isNumber(json)) {
-    return decode.ifNum(json);
-  }
-  if (decode.ifBool && isBoolean(json)) {
-    return decode.ifBool(json);
-  }
-  if (decode.ifNull && isNull(json)) {
-    return decode.ifNull();
-  }
-
-  if (Object.keys(decode).length === 0) {
-    throw new Error('At most one type decoder must be provided to JsonAny.fromJson');
-  }
-  const expected = [
-    decode.ifObj ? 'JsonObject' : '',
-    decode.ifArr ? 'JsonArray' : '',
-    decode.ifString ? 'string' : '',
-    decode.ifNum ? 'number' : '',
-    decode.ifBool ? 'boolean' : ''
-  ].join(' | ');
-  throw new JsonParseError(expected, json);
-}
+export type ObjectProperty<T> = FromAny<T> & {
+  readonly source?: string;
+  readonly value?: T;
 };
+
+/**
+ * Decode an object using the metadata associated with each of the serializable properties.
+ * @param properties: {[K in keyof T]: ObjectProperty<T[K]>}
+ * @param pointer: JsonPointer
+ * A pointer tracking which key we are attempting to decode, from the root of the object.
+ * If not provided, it is assumed that we are parsing the root of the json object graph.
+ */
+export function fromJsonObject<T>(properties: {[K in Extract<keyof T, string>]: ObjectProperty<T[K]>}, pointer?: JsonPointer) {
+  const propDecoders: Mutable<{[K in keyof T]: JsonDecoder<JsonObject, T[K]>}> = {};
+  const keys = Object.keys(properties) as (keyof T)[];
+  for (const key of keys) {
+    if (typeof key === 'string') {
+      const tKey = key as Extract<keyof T, string>;
+      propDecoders[tKey] = propFromJson(tKey, properties[tKey], pointer);
+    } else {
+      throw new Error('Properties must have only string keys');
+    }
+  }
+  return _fromJsonObject(propDecoders as {[K in keyof T]: JsonDecoder<JsonObject, T[K]>});
+}
+
+function propFromJson<T, K extends Extract<keyof T, string>>(key: K, prop: ObjectProperty<T[K]>, pointer?: JsonPointer): JsonDecoder<JsonObject, T[K]> {
+  const source = prop.source || key;
+
+  if (prop.value !== undefined) {
+    return () => prop.value as T[K];
+  }
+
+  return function (obj: JsonObject, pointer?: JsonPointer) {
+
+    const jsonValue = obj[source as string];
+    if (jsonValue === undefined) {
+      throw new JsonParseError(`a JsonObject with defined '${source}'`, obj, pointer);
+    }
+    return fromJsonAny<T[K]>(prop)(obj, pointer);
+  };
+}
 

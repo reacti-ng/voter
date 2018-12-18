@@ -4,7 +4,11 @@ import {OrgService} from '../../org.service';
 import {Observable} from 'rxjs';
 import {Org} from '../../org.model';
 import {OrgState} from '../../org.state';
-import {map} from 'rxjs/operators';
+import {filter, map, switchMap, tap} from 'rxjs/operators';
+import {List} from 'immutable';
+import {Poll} from '../../../poll/poll.model';
+import {PollService} from '../../../poll/poll.service';
+import {isNotUndefined} from '../../../common/common.types';
 
 @Component({
   selector: 'app-org-activity-page',

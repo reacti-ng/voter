@@ -5,10 +5,15 @@ import {HttpClient, HttpParams} from '@angular/common/http';
 import {BehaviorSubject, Observable, of, throwError} from 'rxjs';
 import {filter, first, map, shareReplay, switchMap} from 'rxjs/operators';
 
-import {fromJson} from '../json/from-json.operator';
 import {JsonObject} from '../json/json.model';
 
-import {CursorPageResponse, NumberedPageResponse, PaginationType, SimplePageResponse} from './http-response.model';
+import {
+  CursorPageResponse,
+  cursorPageResponseFromJson,
+  NumberedPageResponse, numberedPageResponseFromJson,
+  PaginationType,
+  SimplePageResponse
+} from './http-response.model';
 
 @Injectable()
 export class PaginatedResponseFactory<T> {
@@ -40,7 +45,7 @@ export class PaginatedResponseFactory<T> {
     switch (options.paginationType || 'none') {
       case 'none':
         return this.http.get(url, {params: options.params}).pipe(
-          fromJson({ifObj: (json) => SimplePageResponse.fromJson<T>(options.decodeResult, json)}),
+          numberedPageResponseFromJson(options.decodeResult),
           map((simplePage) => List(simplePage.results))
         );
       case 'page-number':
@@ -77,7 +82,7 @@ export class PageNumberPagination<T> {
   readonly page$ = this.pageNumberSubject.pipe(
     map(pageNumber => ({params: this.params.set('page', `${pageNumber}`) })),
     switchMap((request) => this.http.get(this.url, {params: request.params})),
-    fromJson<NumberedPageResponse<T>>({ifObj: (obj) => NumberedPageResponse.fromJson(this.decodeResult, obj) }),
+    numberedPageResponseFromJson(this.decodeResult),
     shareReplay(1)
   );
   // Keep page alive

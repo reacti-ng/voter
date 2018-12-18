@@ -1,9 +1,9 @@
 import {Injectable} from '@angular/core';
 import {ActivatedRouteSnapshot, CanActivate, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
-import {filter, first, mapTo, switchMap} from 'rxjs/operators';
+import {filter, first, switchMap} from 'rxjs/operators';
 
-import {AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
+import {authorizationCodeGrantResponseFromQueryParams} from './authorization-code-grant.model';
 import {AuthorizationCodeGrantTokenExchange} from './auth.actions';
 import {AuthService} from './auth.service';
 
@@ -16,7 +16,7 @@ export class AuthorizationCodeGrantRedirectHandlerGuard implements CanActivate {
   ) {}
 
   canActivate(route: ActivatedRouteSnapshot) {
-    const responseParams = AuthorizationCodeGrantResponse.fromQueryParams(route.queryParamMap);
+    const responseParams = authorizationCodeGrantResponseFromQueryParams(route.queryParamMap);
     if (responseParams !== null) {
       this.store.dispatch(new AuthorizationCodeGrantTokenExchange(responseParams));
     } else {

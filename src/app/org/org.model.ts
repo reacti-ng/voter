@@ -1,4 +1,5 @@
 import {JsonObject} from '../common/json/json.model';
+import {fromJsonAny, fromJsonObject} from '../common/json/decoder';
 
 
 export interface Org {
@@ -7,11 +8,13 @@ export interface Org {
   readonly name: string;
 }
 
-export const Org = {
-  fromJson: (json: JsonObject) => {
-    throw new Error('Not implemented');
-  },
-  toJson: (json: JsonObject) => {
-    throw new Error('not implemented');
-  }
-};
+export const orgFromJson = fromJsonObject<Org>({
+  id: {string: true, ifNull: 'throw'},
+  name: {string: true, ifNull: 'throw'}
+});
+export function orgToJson(org: Org) {
+  return {
+    id: org.id,
+    name: org.name
+  } as JsonObject;
+}

@@ -1,14 +1,18 @@
-import * as uuid from 'uuid';
 import {InjectionToken} from '@angular/core';
-import {EMPTY, Observable, of, race, throwError} from 'rxjs';
+import {Observable, of, throwError} from 'rxjs';
 import {ApplicationState, AuthorizationCodeGrantState, isAuthorizationCodeGrantState} from './application.state';
-import {AuthorizationCodeGrantRequest, AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
-import {HttpClient, HttpErrorResponse, HttpParams, HttpRequest, HttpResponse} from '@angular/common/http';
-import {OAuth2Token} from './oauth2-token.model';
-import {fromJson} from '../json/from-json.operator';
-import {catchError, concatMap, distinctUntilChanged, exhaustMap, filter, first, flatMap, map, switchMap} from 'rxjs/operators';
+import {
+  AuthorizationCodeGrantRequest, authorizationCodeGrantRequestToHttpParams,
+  AuthorizationCodeGrantResponse,
+  authorizationCodeGrantResponseFromJson
+} from './authorization-code-grant.model';
+import {HttpClient, HttpErrorResponse, HttpParams} from '@angular/common/http';
+import {OAuth2Token, oauth2TokenFromJson} from './oauth2-token.model';
+import {catchError, distinctUntilChanged, filter, first, flatMap, map, switchMap} from 'rxjs/operators';
 import {select} from '@ngrx/store';
-import {isNotUndefined} from '../common.types';
+import {fromJsonAny} from '../json/decoder';
+import {JsonAny} from '../json/json.model';
+import {singleResponseFromJson} from '../model/http-response.model';
 
 export interface PublicGrantApplicationConfig {
   readonly type: 'public';
@@ -101,7 +105,7 @@ export class ResourceOwnerPasswordGrantApplication extends ApplicationBase {
         if (token === undefined) {
           throw new Error(`Must be logged in in order to request an access token`);
         }
-        const body = AuthorizationCodeGrantRequest.toHttpParams(request);
+        const body = authorizationCodeGrantRequestToHttpParams(request);
 
         // Call the user/auth_code with the resource owner grant.
         // This is the _only_ api endpoint which accepts authorization using the resource owner app
@@ -114,9 +118,8 @@ export class ResourceOwnerPasswordGrantApplication extends ApplicationBase {
               }
             });
           }),
-          fromJson({
-            ifObj: (obj) => AuthorizationCodeGrantResponse.fromJson(obj)
-          }));
+          singleResponseFromJson(authorizationCodeGrantResponseFromJson)
+        );
       })
     );
   }
@@ -138,7 +141,7 @@ export class ResourceOwnerPasswordGrantApplication extends ApplicationBase {
       },
       responseType: 'json'
     }).pipe(
-      fromJson({ifObj: OAuth2Token.fromJson}),
+      singleResponseFromJson(oauth2TokenFromJson),
       catchError(err => {
         if (err instanceof HttpErrorResponse && err.status === 401) {
           return of(undefined);
@@ -181,7 +184,7 @@ export class AuthorizationCodeGrantApplication extends ApplicationBase {
     return this.http.post(this.config.tokenUrl, grantRequest, {
       headers: {'content-type': 'application/x-www-form-urlencoded'}
     }).pipe(
-      fromJson({ifObj: OAuth2Token.fromJson}),
+      singleResponseFromJson(oauth2TokenFromJson),
       catchError((err: any) => {
         if (err instanceof HttpErrorResponse && err.status === 401) {
           return of(undefined);
@@ -202,7 +205,7 @@ export class AuthorizationCodeGrantApplication extends ApplicationBase {
       headers: {'content-type': 'application/x-www-form-urlencoded'},
       responseType: 'json',
     }).pipe(
-      fromJson({ifObj: OAuth2Token.fromJson})
+      singleResponseFromJson(oauth2TokenFromJson)
     );
   }
 

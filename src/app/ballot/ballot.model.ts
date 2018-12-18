@@ -1,5 +1,7 @@
+import {JsonPointer} from 'json-pointer';
 import {JsonObject} from '../common/json/json.model';
 import {Ident} from '../common/model/ident.model';
+import {fromJsonAny, fromJsonObject} from '../common/json/decoder';
 
 
 export interface Ballot {
@@ -7,10 +9,6 @@ export interface Ballot {
 
 }
 
-export const Ballot = {
-  fromJson: function (json: JsonObject): Ballot {
-    return JsonObject.fromJson({
-      id: () => Ident.fromJson(json).id
-    }, json);
-  }
-}
+export const ballotFromJson = fromJsonObject<Ballot>({
+  id: {string: true, ifNull: 'throw'}
+});

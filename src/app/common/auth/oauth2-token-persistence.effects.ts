@@ -2,7 +2,7 @@ import {Inject, Injectable} from '@angular/core';
 import {DOCUMENT} from '@angular/common';
 import {ApplicationState} from './application.state';
 import {select} from '@ngrx/store';
-import {OAuth2Token} from './oauth2-token.model';
+import {OAuth2Token, oauth2TokenFromJson} from './oauth2-token.model';
 import {combineLatest, defer, EMPTY, of} from 'rxjs';
 import {distinctUntilKeyChanged, map, tap} from 'rxjs/operators';
 import {Actions, Effect, ofType} from '@ngrx/effects';
@@ -88,7 +88,7 @@ export class Oauth2TokenPersistenceEffects {
       const isTokenPersistenceEnabled = window.localStorage.getItem(TOKEN_PERSISTENCE_ENABLED_STORAGE_KEY) === 'true';
 
       const jsonToken = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
-      const token = jsonToken && OAuth2Token.fromJson(JSON.parse(jsonToken) as JsonObject) || null;
+      const token = jsonToken && oauth2TokenFromJson(JSON.parse(jsonToken) as JsonObject) || null;
 
       const jsonTimestamp = window.localStorage.getItem(ACCESS_TOKEN_TIMESTAMP_STORAGE_KEY);
       const timestamp = jsonTimestamp && Number.parseInt(jsonTimestamp, 10) || null;

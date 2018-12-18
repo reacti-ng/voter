@@ -3,21 +3,18 @@ import {TestBed} from '@angular/core/testing';
 import {AuthService} from './auth.service';
 import {DOCUMENT} from '@angular/common';
 import {AuthorizationCodeGrantEffects} from './authorization-code-grant.effects';
-import {Action, StoreModule} from '@ngrx/store';
-import {TestScheduler} from 'rxjs/testing';
-import {Actions, EffectsModule} from '@ngrx/effects';
-import {BehaviorSubject, Observable, of, Subject, timer} from 'rxjs';
+import {Action} from '@ngrx/store';
+import {BehaviorSubject, of, Subject} from 'rxjs';
 import {provideMockActions} from '@ngrx/effects/testing';
 import {
   AuthorizationCodeGrantRedirect,
   AuthorizationCodeGrantTokenExchange,
-  BeginAuthorizationCodeGrant, SetAuthToken,
+  BeginAuthorizationCodeGrant,
+  SetAuthToken,
   SetLoginRedirect
 } from './auth.actions';
 import {Set} from 'immutable';
-import {first, map, tap, toArray} from 'rxjs/operators';
-import {AuthState} from './auth.state';
-import {reduceAuthState} from '../../core/auth/auth.state';
+import {map, tap, toArray} from 'rxjs/operators';
 import {HttpParams} from '@angular/common/http';
 import {AuthApplication} from './application.model';
 import {AuthorizationCodeGrantResponse} from './authorization-code-grant.model';
@@ -86,11 +83,11 @@ describe('authorization-code-grant.effects', () => {
       return spyOn(authService, 'appForKey').and.returnValue(app);
     }
 
-    function expectUrl(url: string, expectUrl: string, options?: { params: HttpParams }): void {
-      const [actualUrl, query] = url.split('?', 2);
+    function expectUrl(actual: string, expected: string, options?: { params: HttpParams }): void {
+      const [actualUrl, query] = actual.split('?', 2);
       const actualParams = query && new HttpParams({fromString: query}) || undefined;
 
-      expect(actualUrl).toEqual(expectUrl);
+      expect(actualUrl).toEqual(expected);
       if (options && options.params === undefined) {
         expect(actualParams).toEqual(undefined);
       } else {

@@ -8,10 +8,10 @@ import {ModelResolver} from './model-resolver.service';
 import {isJsonObject, JsonObject} from '../json/json.model';
 import {ModelRef} from './model-ref.model';
 import {isString} from '../common.types';
-import {fromJson} from '../json/from-json.operator';
-import {SimplePageResponse} from './http-response.model';
+import {SimplePageResponse, simplePageResponseFromJson} from './http-response.model';
 import {Injectable} from '@angular/core';
 import {PageCursorPagination, PageNumberPagination, PaginatedResponseFactory} from './pagination.service';
+import {fromJsonAny} from '../json/decoder';
 
 interface PartiallyResolved<T extends Ident> {
   resolved: Set<T>;
@@ -75,10 +75,9 @@ export abstract class ModelService<T extends Ident> implements ModelResolver<T> 
         );
       }),
       switchMap(({resolved, remaining}) => {
-
         return this.http.get<JsonObject>(this.path, {params: {in: remaining.join(',')}}).pipe(
-          fromJson({ifObj: (json) => SimplePageResponse.fromJson(this.fromJson, json).results }),
-          map(entities => Set(entities)),
+          simplePageResponseFromJson<T>(this.fromJson),
+          map(entities => Set(entities.results)),
           tap(fetchedEntities => this.addManyEntities(fetchedEntities)),
           map(fetchedEntities => ({
             resolved: resolved.union(fetchedEntities),
@@ -121,9 +120,6 @@ export abstract class ModelService<T extends Ident> implements ModelResolver<T> 
       decodeResult: this.fromJson
     });
   }
-
-
-
 
   resolve(ref: ModelRef<T>): Observable<T> {
     return typeof ref === 'string' ? this.fetch(ref) : of(ref);

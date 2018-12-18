@@ -1,9 +1,11 @@
 import {Set} from 'immutable';
-import {Org} from '../org/org.model';
-import {ModelRef} from '../common/model/model-ref.model';
-import {JsonObject} from '../common/json/json.model';
-import {notAStringError} from '../common/common.types';
-import {Ident} from '../common/model/ident.model';
+import {JsonPointer} from 'json-pointer';
+
+import {JsonArray, JsonObject} from '../common/json/json.model';
+import {fromJsonArray, fromJsonObject} from '../common/json/decoder';
+
+import {Org, orgFromJson} from '../org/org.model';
+import {ModelRef, modelRefFromJson, modelRefToJson} from '../common/model/model-ref.model';
 
 
 export interface User {
@@ -15,7 +17,7 @@ export interface User {
   readonly memberOf: Set<ModelRef<Org>>;
 }
 
-function userToJson(user: Partial<User>): JsonObject {
+export function userToJson(user: Partial<User>): JsonObject {
   const json: JsonObject = {};
   if (user.id) {
     json['id'] = user.id;
@@ -24,27 +26,23 @@ function userToJson(user: Partial<User>): JsonObject {
     json['name'] = user.name;
   }
   if (user.memberOf) {
-    json['memberOf'] = user.memberOf.map(orgRef => ModelRef.toJson(orgRef)).toArray();
+    json['memberOf'] = user.memberOf.map(orgRef => modelRefToJson()(orgRef)).toArray();
   }
   return json;
 }
 
-export const User = {
-  toJson: userToJson,
-  fromJson: (json: JsonObject): User => JsonObject.fromJson<User>({
-    type: () => 'user',
-    id: () => Ident.fromJson(json).id,
-    name: ({name}) => {
-      if (typeof name !== 'string') {
-        throw notAStringError('name', name);
-      }
-      return name;
+
+export const userFromJson = fromJsonObject<User>({
+  type: {value: 'user'},
+  id:  {string: true, ifNull: 'throw'},
+  name: {string: true, ifNull: 'throw'},
+  memberOf: {
+    source: 'member_of',
+    array: (json: JsonArray, pointer?: JsonPointer) => {
+      const memberOfArr = fromJsonArray(modelRefFromJson(orgFromJson))(json, pointer);
+      return Set(memberOfArr);
     },
-    memberOf: ({memberOf}) => {
-      return Array.isArray(memberOf)
-        ? Set(memberOf.map(orgRef => ModelRef.fromJson(Org.fromJson, orgRef)))
-        : Set();
-    }
-  }, json)
-};
+    ifNull: Set()
+  }
+});
 

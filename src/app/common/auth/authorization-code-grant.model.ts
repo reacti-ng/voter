@@ -1,8 +1,7 @@
 import {Set} from 'immutable';
 import {ParamMap} from '@angular/router';
-import {Mutable, notAStringError} from '../common.types';
 import {HttpParams} from '@angular/common/http';
-import {Observable} from 'rxjs';
+import {fromJsonAny, fromJsonObject} from '../json/decoder';
 import {JsonObject} from '../json/json.model';
 
 /**
@@ -29,74 +28,76 @@ export interface AuthorizationCodeGrantRequest {
 }
 
 
-export const AuthorizationCodeGrantRequest = {
-  fromQueryParams: (params: ParamMap) => {
-    const redirectUri = params.get('redirect_uri');
-    if (typeof redirectUri !== 'string') {
-      throw notAStringError('redirect_uri', redirectUri);
-    }
-    const clientId = params.get('client_id');
-    if (typeof clientId !== 'string') {
-      throw notAStringError('client_id', clientId);
-    }
-    const strScope = params.get('scope');
-    if (typeof strScope !== 'string') {
-      throw notAStringError('scope', strScope);
-    }
-    const scope = Set(strScope.split(' '));
-
-    const state = params.get('state');
-    if (typeof state !== 'string') {
-      throw notAStringError('state', state);
-    }
-    return {redirectUri, clientId, scope, state} as AuthorizationCodeGrantRequest;
-  },
-  toHttpParams: (request: AuthorizationCodeGrantRequest) => {
-    return new HttpParams({
-      fromObject: {
-        response_type: 'code',
-        redirect_uri: request.redirectUri,
-        client_id: request.clientId,
-        scope: request.scope.join(' '),
-        state: request.state
-      }
-    });
+export function authorizationCodeGrantRequestFromQueryParams(params: ParamMap) {
+  const redirectUri = params.get('redirect_uri');
+  if (typeof redirectUri !== 'string') {
+    throw notAStringError('redirect_uri', redirectUri);
   }
+  const clientId = params.get('client_id');
+  if (typeof clientId !== 'string') {
+    throw notAStringError('client_id', clientId);
+  }
+  const strScope = params.get('scope');
+  if (typeof strScope !== 'string') {
+    throw notAStringError('scope', strScope);
+  }
+  const scope = Set(strScope.split(' '));
 
-};
+  const state = params.get('state');
+  if (typeof state !== 'string') {
+    throw notAStringError('state', state);
+  }
+  return {redirectUri, clientId, scope, state} as AuthorizationCodeGrantRequest;
+}
+export function authorizationCodeGrantRequestToHttpParams(request: AuthorizationCodeGrantRequest) {
+  return new HttpParams({
+    fromObject: {
+      response_type: 'code',
+      redirect_uri: request.redirectUri,
+      client_id: request.clientId,
+      scope: request.scope.join(' '),
+      state: request.state
+    }
+  });
+}
+
 
 export interface AuthorizationCodeGrantResponse {
   readonly code: string;
   readonly state: string;
 }
 
-export const AuthorizationCodeGrantResponse = {
-  fromJson: (json: JsonObject) => {
-    const {code, state} = json;
-    if (typeof code !== 'string') {
-      throw notAStringError('code', code);
-    }
-    if (typeof state !== 'string') {
-      throw notAStringError('state', state);
-    }
-    return {code, state} as AuthorizationCodeGrantResponse;
-  },
-
-  fromQueryParams: (params: ParamMap) => {
-    const code = params.get('code');
-    if (code != null) {
-      const state = params.get('state');
-      if (state == null) {
-        throw notAStringError('code', params);
-      }
-      return {code, state};
-    }
-    return null;
-  },
-  toHttpParams: (response: AuthorizationCodeGrantResponse) => {
-    return new HttpParams({ fromObject: {
-      ...response
-      }
-    });
+export function authorizationCodeGrantResponseFromJson(json: JsonObject) {
+  const {code, state} = json;
+  if (typeof code !== 'string') {
+    throw notAStringError('code', code);
   }
-};
+  if (typeof state !== 'string') {
+    throw notAStringError('state', state);
+  }
+  return {code, state} as AuthorizationCodeGrantResponse;
+}
+
+export function authorizationCodeGrantResponseFromQueryParams(params: ParamMap) {
+  const code = params.get('code');
+  if (code != null) {
+    const state = params.get('state');
+    if (state == null) {
+      throw notAStringError('code', params);
+    }
+    return {code, state};
+  }
+  return null;
+}
+
+export function authorizationCodeGrantResponseToHttpParams(response: AuthorizationCodeGrantResponse) {
+  return new HttpParams({
+    fromObject: {
+      ...response
+    }
+  });
+}
+
+function notAStringError(name: string, obj: any) {
+  return new Error(`Expected ${name} to be a string in ${obj}`);
+}

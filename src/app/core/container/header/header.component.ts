@@ -4,6 +4,7 @@ import {UserState} from '../../../user/user.state';
 import {Observable} from 'rxjs';
 import {User} from '../../../user/user.model';
 import {AuthService} from '../../../common/auth/auth.service';
+import {tap} from 'rxjs/operators';
 
 
 @Component({

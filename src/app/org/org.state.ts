@@ -1,7 +1,7 @@
 import {Org} from './org.model';
 import {createEntityAdapter, Dictionary, EntityState} from '@ngrx/entity';
 import {Action, createFeatureSelector, createSelector} from '@ngrx/store';
-import {ADD_ORG, ADD_ORGS, isOrgAction, OrgAction} from './org.actions';
+import {ADD_ORG, ADD_ORGS, isOrgAction, OrgAction, SET_DETAIL_ORG, UPSERT_ORGS} from './org.actions';
 import {List} from 'immutable';
 
 export interface OrgState extends EntityState<Org> {
