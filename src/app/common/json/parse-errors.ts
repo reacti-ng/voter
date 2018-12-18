@@ -22,7 +22,7 @@ export class JsonParseError extends Error {
   static unexpectedNull(pointer?: JsonPointer) {
     return new JsonParseError(`an object decoded with ifNull: 'throw'`, null, pointer);
   }
-constructor(expectType: string, actualInstance: any, pointer?: JsonPointer) {
+  constructor(expectType: string, actualInstance: any, pointer?: JsonPointer) {
     const atPointer = pointer && (' at ' + jsonPointerToString(pointer));
     super(`
       Error parsing json object${atPointer}.

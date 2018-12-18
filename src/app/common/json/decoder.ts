@@ -73,7 +73,7 @@ export function fromJsonAny<T>(_if: FromAny<T | null>): JsonDecoder<JsonAny, T |
       _if.number ? 'number' : '',
       _if.boolean ? 'boolean' : '',
       _if.ifNull ? 'null' : ''
-    ].join(' | ');
+    ].filter(expect => expect !== '').join(' | ');
     throw new JsonParseError(expected, json, pointer);
 
     function useDecoder(decoder: JsonDecoder<any, T | null> | true) {
@@ -96,7 +96,7 @@ export function decodeNullable<T>(_if?: {ifNull?: Default<T> | 'throw' | null}):
   };
 }
 
-export function fromJsonArray<Item>(decodeItem: JsonDecoder<JsonAny, Item>, pointer?: JsonPointer): JsonDecoder<JsonArray, Item[]> {
+export function fromJsonArray<Item>(decodeItem: JsonDecoder<JsonAny, Item>): JsonDecoder<JsonArray, Item[]> {
   return function (json: JsonArray, pointer?: JsonPointer) {
     return json.map((item, i) => {
       const pointer_i = joinJsonPointer(pointer || '', i.toString());
@@ -130,21 +130,26 @@ export type ObjectProperty<T> = FromAny<T> & {
  * A pointer tracking which key we are attempting to decode, from the root of the object.
  * If not provided, it is assumed that we are parsing the root of the json object graph.
  */
-export function fromJsonObject<T>(properties: {[K in Extract<keyof T, string>]: ObjectProperty<T[K]>}, pointer?: JsonPointer) {
-  const propDecoders: Mutable<{[K in keyof T]: JsonDecoder<JsonObject, T[K]>}> = {};
-  const keys = Object.keys(properties) as (keyof T)[];
-  for (const key of keys) {
-    if (typeof key === 'string') {
-      const tKey = key as Extract<keyof T, string>;
-      propDecoders[tKey] = propFromJson(tKey, properties[tKey], pointer);
-    } else {
-      throw new Error('Properties must have only string keys');
+export function fromJsonObject<T>(properties: {[K in Extract<keyof T, string>]: ObjectProperty<T[K]>}) {
+  return function (json: JsonObject, pointer?: JsonPointer) {
+    const t: Mutable<T> = {};
+    const keys = Object.keys(properties) as (keyof T)[];
+
+    for (const key of keys) {
+      if (typeof key === 'string') {
+        const tKey = key as Extract<keyof T, string>;
+        const pointer_k = joinJsonPointer(pointer || '', tKey.toString());
+        const decoder = propFromJson(tKey, properties[tKey]);
+        t[tKey] = decoder(json, pointer_k);
+      } else {
+        throw new Error('Properties must have only string keys');
+      }
     }
-  }
-  return _fromJsonObject(propDecoders as {[K in keyof T]: JsonDecoder<JsonObject, T[K]>});
+    return t as T;
+  };
 }
 
-function propFromJson<T, K extends Extract<keyof T, string>>(key: K, prop: ObjectProperty<T[K]>, pointer?: JsonPointer): JsonDecoder<JsonObject, T[K]> {
+function propFromJson<T, K extends Extract<keyof T, string>>(key: K, prop: ObjectProperty<T[K]>): JsonDecoder<JsonObject, T[K]> {
   const source = prop.source || key;
 
   if (prop.value !== undefined) {
@@ -152,12 +157,11 @@ function propFromJson<T, K extends Extract<keyof T, string>>(key: K, prop: Objec
   }
 
   return function (obj: JsonObject, pointer?: JsonPointer) {
-
     const jsonValue = obj[source as string];
     if (jsonValue === undefined) {
       throw new JsonParseError(`a JsonObject with defined '${source}'`, obj, pointer);
     }
-    return fromJsonAny<T[K]>(prop)(obj, pointer);
+    return fromJsonAny<T[K]>(prop)(jsonValue, pointer);
   };
 }
 
