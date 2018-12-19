@@ -3,7 +3,7 @@ import {List} from 'immutable';
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {BehaviorSubject, Observable, of, throwError} from 'rxjs';
-import {filter, first, map, shareReplay, switchMap} from 'rxjs/operators';
+import {filter, first, map, scan, shareReplay, switchMap} from 'rxjs/operators';
 
 import {JsonObject} from '../json/json.model';
 
@@ -142,25 +142,34 @@ export class PageNumberPagination<T> {
 
 export class PageCursorPagination<T> {
   readonly paginationType = 'cursor';
-  readonly params: HttpParams;
-  readonly decodeResult: (obj: JsonObject) => T;
 
   constructor(
     protected readonly http: HttpClient,
     readonly url: string,
-    options: Readonly<{
+    readonly options: Readonly<{
       params?: HttpParams | {[k: string]: string | string[]},
       decodeResult: (obj: JsonObject) => T
     }>
-  ) {
-    this.params = asHttpParams(options.params);
-    this.decodeResult = options.decodeResult;
+  ) {}
+
+  readonly params = asHttpParams(this.options.params);
+  readonly decodeResult = this.options.decodeResult;
+  private cursorSubject = new BehaviorSubject<string | undefined>(undefined);
+
+  readonly currentPage$: Observable<CursorPageResponse<T>> = this.cursorSubject.pipe(
+    map(cursor => cursor !== undefined ? this.params.set('cursor', cursor) : this.params),
+    switchMap(params => this.http.get(this.url, {params})),
+    cursorPageResponseFromJson(this.decodeResult),
+  );
+
+  readonly results$: Observable<List<T>> = this.currentPage$.pipe(
+    scan((results: List<T>, page: CursorPageResponse<T>) => results.concat(page.results), List()),
+    shareReplay(1)
+  );
+
+  updateParams(params: {[k: string]: string | string[]} | HttpParams) {
+    return new PageCursorPagination(this.http, this.url, { params, decodeResult: this.decodeResult});
   }
-
-  readonly currentPage$: Observable<CursorPageResponse<T>> = throwError(new Error('cursor: page$ not implemented'));
-
-  // FIXME: All results loaded so far
-  readonly results$: Observable<List<T>> = throwError(new Error('cursor: results$ not implemented' ));
 }
 
 export type PaginatedResponse<T> = Observable<List<T>> | PageNumberPagination<T> | PageCursorPagination<T>;
@@ -171,7 +180,6 @@ function asHttpParams(params: HttpParams | {[k: string]: string | string[]} | un
         : params !== undefined
             ? new HttpParams({fromObject: params})
             : new HttpParams();
-
 }
 
 
