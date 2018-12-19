@@ -51,7 +51,7 @@ export abstract class ModelService<T extends Ident> implements ModelResolver<T> 
       tap((entity) => this.addEntity(entity))
     );
 
-    return race(fromCache$, fromServer$);
+    return race(fromCache$, fromServer$).pipe(first());
   }
 
   /**
