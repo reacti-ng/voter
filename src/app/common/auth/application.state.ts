@@ -33,6 +33,18 @@ export function isAuthorizationCodeGrantState(obj: any): obj is AuthorizationCod
   return !!obj && Array.isArray(obj['loginRedirect']);
 }
 
+function appStateTokenRefreshedAt(appState: ApplicationState): [OAuth2Token | undefined, Date] {
+  return [appState.token, appState.refreshedAt];
+}
+function appStateTokenExpiresAt(appState: ApplicationState): [OAuth2Token | undefined, Date] {
+  const [token, refreshedAt] = appStateTokenRefreshedAt(appState);
+  const expiresIn  = token && token.expiresIn;
+  const expiresAt = expiresIn && addSeconds(refreshedAt, expiresIn) || new Date(1970, 0, 1);
+  return [token, expiresAt];
+
+}
+
+
 export const ApplicationState = {
   initial: (app: keyof any) => ({
     app,
@@ -44,21 +56,10 @@ export const ApplicationState = {
   selectToken: (authState: ApplicationState) => authState.token,
   selectAccessToken: (appState: ApplicationState) => appState.token && appState.token.accessToken,
 
-  selectTokenRefreshedAt: createSelector(
-    (authState: ApplicationState) => authState.token,
-    (authState: ApplicationState) => authState.refreshedAt,
-    (token, refreshedAt) => ([token, refreshedAt] as [OAuth2Token, Date])
-  ),
 
-  selectTokenExpiresAt: createSelector(
-    (authState: ApplicationState) => authState.token,
-    (authState: ApplicationState) => authState.refreshedAt,
-    (token, refreshedAt) => {
-      const expiresIn = token && token.expiresIn;
-      const expiresAt = expiresIn && addSeconds(refreshedAt, expiresIn) || new Date(Date.now());
-      return [token, expiresAt] as [OAuth2Token, Date];
-    }
-  ),
+  selectTokenRefreshedAt: appStateTokenRefreshedAt,
+  selectTokenExpiresAt: appStateTokenExpiresAt,
+
   isAuthCodeGrantInProgress: (authState: AuthorizationCodeGrantState) => authState.authCodeGrantInProgress !== undefined
 };
 
@@ -69,6 +70,11 @@ export function reduceApplicationState(state: ApplicationState, action: AuthActi
         ...state,
         token: action.token,
         refreshedAt: action.useTimestamp ? action.useTimestamp : new Date(Date.now()),
+      };
+    case SET_TOKEN_PERSISTENCE_IS_ENABLED:
+      return {
+        ...state,
+        isTokenPersistenceEnabled: action.isEnabled
       };
     case AUTHORIZATION_CODE_GRANT_BEGIN:
       return {
@@ -100,8 +106,6 @@ export function reduceCodeGrantApplicationState(state: AuthCodeGrantState, actio
       return {...state, authCodeGrantInProgress: action.response};
     case AUTHORIZATION_CODE_GRANT_TOKEN_EXCHANGE:
       return {...state, authCodeGrantInProgress: action.response};
-    case SET_TOKEN_PERSISTENCE_IS_ENABLED:
-      return {...state, isTokenPersistenceEnabled: action.isEnabled};
     default:
       return state;
   }

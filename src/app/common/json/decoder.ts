@@ -4,7 +4,7 @@ import {JsonPointer, jsonPointerToArray} from 'json-pointer';
 import {isJsonArray, isJsonObject, JsonAny, JsonArray, JsonObject} from './json.model';
 import {isBoolean, isNumber, isString, Mutable} from '../common.types';
 import {JsonParseError} from './parse-errors';
-import {joinJsonPointer} from '../json-pointer-utils';
+import {joinJsonPointers} from './pointer-utils';
 
 export type JsonDecoder<Json, T> = (obj: Json, pointer?: JsonPointer) => T;
 
@@ -99,7 +99,7 @@ export function decodeNullable<T>(_if?: {ifNull?: Default<T> | 'throw' | null}):
 export function fromJsonArray<Item>(decodeItem: JsonDecoder<JsonAny, Item>): JsonDecoder<JsonArray, Item[]> {
   return function (json: JsonArray, pointer?: JsonPointer) {
     return json.map((item, i) => {
-      const pointer_i = joinJsonPointer(pointer || '', i.toString());
+      const pointer_i = joinJsonPointers(pointer || '', `/${i}`);
       return decodeItem(item, pointer_i);
     });
   };
@@ -138,7 +138,7 @@ export function fromJsonObject<T>(properties: {[K in Extract<keyof T, string>]: 
     for (const key of keys) {
       if (typeof key === 'string') {
         const tKey = key as Extract<keyof T, string>;
-        const pointer_k = joinJsonPointer(pointer || '', tKey.toString());
+        const pointer_k = joinJsonPointers(pointer || '', `/${tKey}`);
         const decoder = propFromJson(tKey, properties[tKey]);
         t[tKey] = decoder(json, pointer_k);
       } else {
@@ -156,10 +156,10 @@ function propFromJson<T, K extends Extract<keyof T, string>>(key: K, prop: Objec
     return () => prop.value as T[K];
   }
 
-  return function (obj: JsonObject, pointer?: JsonPointer) {
+  return function (obj: JsonObject, pointer?: JsonPointer): T[K] {
     const jsonValue = obj[source as string];
-    if (jsonValue === undefined) {
-      throw new JsonParseError(`a JsonObject with defined '${source}'`, obj, pointer);
+    if (jsonValue == null) {
+      return decodeNullable({ifNull: prop.ifNull})(null, pointer) as any as T[K];
     }
     return fromJsonAny<T[K]>(prop)(jsonValue, pointer);
   };

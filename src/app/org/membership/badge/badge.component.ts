@@ -1,5 +1,5 @@
 import {Component, Input} from '@angular/core';
-import {Org} from '../../../org.model';
+import {Org} from '../../org.model';
 
 
 @Component({

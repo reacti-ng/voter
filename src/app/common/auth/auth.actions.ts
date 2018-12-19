@@ -23,6 +23,15 @@ export class SetLoginRedirect {
   }
 }
 
+export const CALL_LOGIN_REDIRECT = 'common.auth: call login redirect';
+export class CallLoginRedirect {
+  readonly type = CALL_LOGIN_REDIRECT;
+  readonly app?: AppKey;
+  constructor(options?: {readonly app?: AppKey}) {
+    this.app = options && options.app;
+  }
+}
+
 // Redirect to the login page, attaching AuthorizationCodeGrantParams to the
 // query parameters of the request.
 export const AUTHORIZATION_CODE_GRANT_BEGIN = 'common.auth: begin authorization code grant';
@@ -65,15 +74,6 @@ export class RefreshToken {
   }
 }
 
-export const STORE_AUTH_TOKEN = 'common.auth: store access token';
-export class StoreAuthToken {
-  readonly type = STORE_AUTH_TOKEN;
-  readonly app?: AppKey;
-  constructor(options?: {readonly app?: AppKey}) {
-    this.app = options && options.app;
-  }
-}
-
 export const SET_TOKEN_PERSISTENCE_IS_ENABLED = 'common.auth: set token persistence is enabled';
 export class SetTokenPersistenceIsEnabled {
   readonly type = SET_TOKEN_PERSISTENCE_IS_ENABLED;
@@ -90,7 +90,6 @@ export type AuthAction
   | AuthorizationCodeGrantRedirect
   | AuthorizationCodeGrantTokenExchange
   | RefreshToken
-  | StoreAuthToken
   | SetTokenPersistenceIsEnabled;
 
 export function isAuthAction(obj: any): obj is AuthAction {
@@ -101,7 +100,6 @@ export function isAuthAction(obj: any): obj is AuthAction {
     AUTHORIZATION_CODE_GRANT_REDIRECT,
     AUTHORIZATION_CODE_GRANT_TOKEN_EXCHANGE,
     REFRESH_TOKEN,
-    STORE_AUTH_TOKEN,
     SET_TOKEN_PERSISTENCE_IS_ENABLED
   ].includes(obj.type);
 }
@@ -121,8 +119,6 @@ export function cloneAuthAction(action: AuthAction, update?: {app?: string}) {
       return new AuthorizationCodeGrantTokenExchange(action.response, {app});
     case REFRESH_TOKEN:
       return new RefreshToken({app});
-    case STORE_AUTH_TOKEN:
-      return new StoreAuthToken({app});
     case SET_TOKEN_PERSISTENCE_IS_ENABLED:
       return new SetTokenPersistenceIsEnabled(action.isEnabled, {app});
   }

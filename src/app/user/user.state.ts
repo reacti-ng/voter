@@ -35,11 +35,11 @@ export const UserState = {
   selectLoginUser: createSelector(userStateSelector, selectLoginUser)
 };
 
-export function reduceUserState(state: UserState = initialUserState, action: Action) {
+export function reduceUserState(state: UserState = initialUserState, action: Action): UserState {
   if (!isUserAction(action)) { return state; }
   switch (action.type) {
     case SET_LOGIN_USER_ID:
-      return {...state, loginUser: action.userId};
+      return {...state, loginUserId: action.userId};
     case ADD_USER:
       return userAdapter.addOne(action.user, state);
     case ADD_MANY_USERS:

@@ -167,9 +167,7 @@ export class AuthorizationCodeGrantApplication extends ApplicationBase {
     filter(isAuthorizationCodeGrantState)
   ) as Observable<ApplicationState & AuthorizationCodeGrantState>;
 
-  get loginRedirect$() {
-    return this.authFlowState$.pipe(map(state => state.loginRedirect), distinctUntilChanged());
-  }
+  readonly loginRedirect$ = this.authFlowState$.pipe(select('loginRedirect'));
 
   exchangeAuthCodeForToken(response: AuthorizationCodeGrantResponse): Observable<OAuth2Token | undefined> {
     const grantRequest = new HttpParams({

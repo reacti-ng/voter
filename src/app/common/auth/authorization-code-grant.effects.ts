@@ -6,7 +6,7 @@ import {Router} from '@angular/router';
 import {Action} from '@ngrx/store';
 import {Actions, Effect, ofType} from '@ngrx/effects';
 
-import {concat, Observable, of, throwError} from 'rxjs';
+import {concat, defer, Observable, of, throwError} from 'rxjs';
 import {catchError, filter, first, ignoreElements, map, switchMap, tap} from 'rxjs/operators';
 
 import {
@@ -32,6 +32,7 @@ export class AuthorizationCodeGrantEffects {
     readonly authService: AuthService<any>,
     @Inject(DOCUMENT) protected readonly document: Document
   ) {}
+
 
   @Effect({dispatch: false})
   readonly beginAuthorizationCodeGrantFlow$ = this.action$.pipe(
@@ -102,7 +103,7 @@ function saveRedirectCommands(storage: Storage, app: AuthorizationCodeGrantAppli
   });
 }
 
-function loadLoginRedirectAction(window: Window | null, app: AuthorizationCodeGrantApplication): Observable<Action> {
+export function loadLoginRedirectAction(window: Window | null, app: AuthorizationCodeGrantApplication): Observable<Action> {
   if (window) {
     const rawRedirect = window.localStorage.getItem(`common.auth::${app.name}::loginRedirect`);
     if (rawRedirect !== null) {

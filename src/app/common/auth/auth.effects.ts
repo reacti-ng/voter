@@ -2,13 +2,17 @@ import {Inject, Injectable} from '@angular/core';
 import {DOCUMENT} from '@angular/common';
 
 
-import {concatMap, filter, map} from 'rxjs/operators';
+import {concatMap, filter, first, ignoreElements, map, switchMap, switchMapTo, tap} from 'rxjs/operators';
 
 import {Store} from '@ngrx/store';
 import {Actions, Effect, ofType} from '@ngrx/effects';
 
-import {cloneAuthAction, isAuthAction, SET_AUTH_TOKEN, SetAuthToken, StoreAuthToken} from './auth.actions';
+import {CALL_LOGIN_REDIRECT, CallLoginRedirect, cloneAuthAction, isAuthAction, SET_AUTH_TOKEN, SetAuthToken} from './auth.actions';
 import {AUTH_DEFAULT_APPLICATION} from './application.model';
+import {Router} from '@angular/router';
+import {AuthService} from './auth.service';
+import {loadLoginRedirectAction} from './authorization-code-grant.effects';
+import {defer} from 'rxjs';
 
 
 @Injectable()
@@ -17,21 +21,34 @@ export class AuthEffects {
   constructor(
     readonly action$: Actions,
     readonly store: Store<object>,
-    @Inject(AUTH_DEFAULT_APPLICATION) private readonly defaultAppId: string,
+    readonly router: Router,
+    readonly authService: AuthService<object>,
     @Inject(DOCUMENT) readonly document: Document,
   ) {}
 
-  // Every time the auth token is set, store the token.
-  readonly storeAccessTokenOnSave$ = this.action$.pipe(
-    ofType<SetAuthToken>(SET_AUTH_TOKEN),
-    concatMap((action) => [action, new StoreAuthToken({app: action.app})])
-  );
+  readonly defaultApp = this.authService.defaultApp;
 
   @Effect()
   readonly provideDefaultApp$ = this.action$.pipe(
     filter(isAuthAction),
     filter(action => action.app === undefined),
-    map(action => cloneAuthAction(action, {app: this.defaultAppId}))
+    map(action => cloneAuthAction(action, {app: this.defaultApp.name}))
+  );
+
+  @Effect()
+  readonly restoreLoginRedirect$ = defer(() => {
+    return loadLoginRedirectAction(this.document.defaultView, this.authService.defaultApp);
+  });
+
+  @Effect({dispatch: false})
+  readonly callLoginRedirect$ = this.action$.pipe(
+    ofType<CallLoginRedirect>(CALL_LOGIN_REDIRECT),
+    switchMapTo(this.defaultApp.loginRedirect$.pipe(first())),
+    switchMap(loginRedirect => {
+      debugger;
+      return this.router.navigate(loginRedirect)
+    }),
+    ignoreElements()
   );
 
 

@@ -21,6 +21,7 @@ import {Set} from 'immutable';
 import {filter, first, map, mapTo, tap} from 'rxjs/operators';
 import {BeginAuthorizationCodeGrant, SetLoginRedirect} from './auth.actions';
 import * as uuid from 'uuid';
+import {isUndefined} from '../common.types';
 
 @Injectable()
 export class AuthService<CoreAuthState extends Record<keyof CoreAuthState, ApplicationState>> {
@@ -86,6 +87,10 @@ export class AuthService<CoreAuthState extends Record<keyof CoreAuthState, Appli
 
   appForKey(key?: Extract<keyof CoreAuthState, string>): AuthApplication {
     return key ? this.apps[key] : this.defaultApp;
+  }
+
+  isDefaultAppKey(key: Extract<keyof CoreAuthState, string>): boolean {
+    return isUndefined(key) || this.defaultApp.name === key;
   }
 
   beginAuthCodeGrantFlow(options?: {app?: Extract<keyof CoreAuthState, string>}): Observable<AuthorizationCodeGrantRequest> {

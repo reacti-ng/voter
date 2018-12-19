@@ -17,9 +17,12 @@ export class AppHeaderComponent {
     readonly authService: AuthService<any>
   ) {}
 
+
   readonly loginUser$: Observable<User | undefined> = this.store.pipe(
     select(UserState.selectLoginUser)
   );
+
+  private _ = this.loginUser$.subscribe((loginUser) => console.log('login user', loginUser));
 
   navigateToLogin() {
     // Temporarily redirect everyone to /org/activity. Thats where initial work is going

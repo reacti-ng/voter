@@ -21,15 +21,12 @@ export const oauth2TokenFromJson = fromJsonObject<OAuth2Token>({
     scope: { string: (rawScope: string) => Set(rawScope.split(' ')), ifNull: 'throw'}
 });
 
-export const OAuth2Token = {
-  toJson: function (token: OAuth2Token) {
-    return {
-      token_type: 'Bearer',
-      access_token: token.accessToken,
-      expires_in: token.expiresIn,
-      refresh_token: token.refreshToken,
-      scope: token.scope.join(' ')
-    };
-  },
-  fromJson: oauth2TokenFromJson
-};
+export function oauth2TokenToJson(token: OAuth2Token) {
+  return {
+    token_type: 'Bearer',
+    access_token: token.accessToken,
+    expires_in: token.expiresIn,
+    refresh_token: token.refreshToken,
+    scope: token.scope.join(' ')
+  };
+}
