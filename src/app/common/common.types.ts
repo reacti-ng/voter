@@ -17,7 +17,7 @@ export function isNotNull<T>(obj: any): obj is Exclude<T, null> {
 export function isUndefined(obj: any): obj is undefined {
   return obj === undefined;
 }
-export function isNotUndefined<T>(obj: any): obj is Extract<T, undefined> {
+export function isNotUndefined<T>(obj: any): obj is Exclude<T, undefined> {
   return obj !== undefined;
 }
 
