@@ -23,23 +23,26 @@ export interface FromAny<T> {
 }
 
 
-export function fromJsonAny<T>(_if: {string?: true, ifNull?: null}                                       , pointer?: JsonPointer): JsonDecoder<JsonAny, string | null>;
-export function fromJsonAny<T>(_if: {string?: true, ifNull?: Default<T> | 'throw' }                      , pointer?: JsonPointer): JsonDecoder<JsonAny, string>;
+export function fromJsonAny<T>(_if: {string?: true, ifNull?: null}                                                      , pointer?: JsonPointer): JsonDecoder<JsonAny, string | null>;
+export function fromJsonAny<T>(_if: {string?: true, ifNull?: Default<T> | 'throw' }                                     , pointer?: JsonPointer): JsonDecoder<JsonAny, string>;
 
-export function fromJsonAny<T>(_if: {string?: (raw: string) => T, ifNull?: null}                         , pointer?: JsonPointer): JsonDecoder<JsonAny, T | null>;
-export function fromJsonAny<T>(_if: {string?: (raw: string) => T, ifNull?: Default<T> | 'throw'}         , pointer?: JsonPointer): JsonDecoder<JsonAny, T>;
+export function fromJsonAny<T>(_if: {string?: (raw: string) => T, ifNull?: null}                                        , pointer?: JsonPointer): JsonDecoder<JsonAny, T | null>;
+export function fromJsonAny<T>(_if: {string?: (raw: string) => T, ifNull?: Default<T> | 'throw'}                        , pointer?: JsonPointer): JsonDecoder<JsonAny, T>;
 
-export function fromJsonAny<T>(_if: {number?: true, ifNull?: null}                                       , pointer?: JsonPointer): JsonDecoder<JsonAny, number | null>;
-export function fromJsonAny<T>(_if: {number?: true, ifNull?: Default<T> | 'throw' }                      , pointer?: JsonPointer): JsonDecoder<JsonAny, number>;
+export function fromJsonAny<T>(_if: {string: true, object?: JsonDecoder<JsonObject, T>, ifNull?: null}                 , pointer?: JsonPointer): JsonDecoder<JsonAny, T | string | null>;
+export function fromJsonAny<T>(_if: {string: true, object?: JsonDecoder<JsonObject, T>, ifNull?: Default<T> | 'throw'} , pointer?: JsonPointer): JsonDecoder<JsonAny, T | string>;
 
-export function fromJsonAny<T>(_if: {boolean?: true, ifNull?: null}                                      , pointer?: JsonPointer): JsonDecoder<JsonAny, boolean | null>;
-export function fromJsonAny<T>(_if: {boolean?: true, ifNull?: Default<T> | 'throw' }                     , pointer?: JsonPointer): JsonDecoder<JsonAny, boolean>;
+export function fromJsonAny<T>(_if: {number?: true, ifNull?: null}                                                      , pointer?: JsonPointer): JsonDecoder<JsonAny, number | null>;
+export function fromJsonAny<T>(_if: {number?: true, ifNull?: Default<T> | 'throw' }                                     , pointer?: JsonPointer): JsonDecoder<JsonAny, number>;
 
-export function fromJsonAny<T>(_if: {object?: JsonDecoder<JsonObject, T>, ifNull?: null}                 , pointer?: JsonPointer): JsonDecoder<JsonAny, T | null>;
-export function fromJsonAny<T>(_if: {object?: JsonDecoder<JsonObject, T>, ifNull?: Default<T> | 'throw'} , pointer?: JsonPointer): JsonDecoder<any, T>;
+export function fromJsonAny<T>(_if: {boolean?: true, ifNull?: null}                                                     , pointer?: JsonPointer): JsonDecoder<JsonAny, boolean | null>;
+export function fromJsonAny<T>(_if: {boolean?: true, ifNull?: Default<T> | 'throw' }                                    , pointer?: JsonPointer): JsonDecoder<JsonAny, boolean>;
 
-export function fromJsonAny<T>(_if: {array?: JsonDecoder<JsonArray, T>, ifNull?: null}                   , pointer?: JsonPointer): JsonDecoder<JsonAny, T | null>;
-export function fromJsonAny<T>(_if: {array?: JsonDecoder<JsonArray, T>, ifNull?: Default<T> | 'throw'}   , pointer?: JsonPointer): JsonDecoder<JsonAny, T>;
+export function fromJsonAny<T>(_if: {object?: JsonDecoder<JsonObject, T>, ifNull?: null}                                , pointer?: JsonPointer): JsonDecoder<JsonAny, T | null>;
+export function fromJsonAny<T>(_if: {object?: JsonDecoder<JsonObject, T>, ifNull?: Default<T> | 'throw'}                , pointer?: JsonPointer): JsonDecoder<any, T>;
+
+export function fromJsonAny<T>(_if: {array?: JsonDecoder<JsonArray, T>, ifNull?: null}                                  , pointer?: JsonPointer): JsonDecoder<JsonAny, T | null>;
+export function fromJsonAny<T>(_if: {array?: JsonDecoder<JsonArray, T>, ifNull?: Default<T> | 'throw'}                  , pointer?: JsonPointer): JsonDecoder<JsonAny, T>;
 
 export function fromJsonAny<T>(_if: FromAny<T>): JsonDecoder<JsonAny, T>;
 export function fromJsonAny<T>(_if: FromAny<T | null>): JsonDecoder<JsonAny, T | null> {
