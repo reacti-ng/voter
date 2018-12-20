@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {HttpClient, HttpParams} from '@angular/common/http';
+import {HttpClient} from '@angular/common/http';
 import {select, Store} from '@ngrx/store';
 import {Org, orgFromJson} from './org.model';
 import {Set} from 'immutable';
@@ -8,8 +8,8 @@ import {ModelService} from '../common/model/model.service';
 import {CoreState} from '../core/core.state';
 import {AddOrg, AddOrgs} from './org.actions';
 import {PollService} from '../poll/poll.service';
-import {Poll} from '../poll/poll.model';
-import {PageCursorPagination, PaginatedResponseFactory} from '../common/model/pagination.service';
+import {PageNumberPagination, PaginatedResponseFactory} from '../common/pagination/pagination.service';
+import {Observable} from 'rxjs';
 
 @Injectable()
 export class OrgService extends ModelService<Org> {
@@ -26,18 +26,18 @@ export class OrgService extends ModelService<Org> {
     super(http, pagination);
   }
 
+  getOrgMembers(destroy$: Observable<void>, org: Org): PageNumberPagination<Org> {
+    return this.pagination.create(`/api/org/${org.id}/members`, destroy$, {
+      paginationType: 'page-number',
+      decodeResult: this.fromJson
+    });
+  }
+
   protected addEntity(org: Org) {
     this.store.dispatch(new AddOrg(org));
   }
   protected addManyEntities(entities: Set<Org>): void {
     this.store.dispatch(new AddOrgs(entities));
-  }
-
-  orgPollTimeline(org: Org): PageCursorPagination<Poll> {
-    const params = new HttpParams({
-        fromObject: {'org': org.id}
-    });
-    return this.pollService.timeline({params});
   }
 }
 

@@ -28,6 +28,10 @@ import {ValueAccessor} from './value-accessor';
 export class AppControlOutletComponent implements OnDestroy, AfterViewInit {
   private readonly controlSubject = new BehaviorSubject<string | undefined>(undefined);
 
+  readonly control$ = this.controlSubject.pipe(
+    filter((value): value is string => typeof value === 'string')
+  );
+
   /** The registered control with the specified name */
   @Input() set control(value: string) {
     this.controlSubject.next(value);
@@ -48,7 +52,7 @@ export class AppControlOutletComponent implements OnDestroy, AfterViewInit {
     this.store.pipe(
       select(createSelector(this.controlsStateSelector, (controlState: ControlsState) => controlState.controls))
     ),
-    this.controlSubject.pipe(filter(isNotUndefined))
+    this.control$
   ).pipe(
     map(([controls, controlName]) => {
       const maybeControl = controls.get(controlName);

@@ -1,0 +1,7 @@
+<ul>
+ <li *ngFor="let membership of memberships; let i = index">
+    <app-org-membership-list-item [membership]="membership"
+                                  [bodyTemplate]="itemBodyTemplate">
+    </app-org-membership-list-item>
+ </li>
+</ul>

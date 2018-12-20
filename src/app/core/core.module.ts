@@ -14,7 +14,6 @@ import {HttpClientModule} from '@angular/common/http';
 import {APP_BASE_HREF} from '@angular/common';
 import {UserModule} from '../user/user.module';
 import {PollSharedModule} from '../poll/poll-shared.module';
-import {OrgSharedModule} from '../org/org-shared.module';
 import {API_BASE_HREF} from '../common/model/api-host.interceptor';
 import {CommonModelModule} from '../common/model/model.module';
 import {AUTH_STATE_SELECTOR} from '../common/auth/auth.state';
@@ -37,8 +36,7 @@ import {AUTH_DEFAULT_APPLICATION} from '../common/auth/application.model';
     CommonAuthModule.forRoot(environment.authConfigs),
     ContainerModule,
     UserModule.forRoot(),
-    PollSharedModule.forRoot(),
-    OrgSharedModule.forRoot()
+    PollSharedModule.forRoot()
   ],
   providers: [
     {provide: APP_BASE_HREF, useValue: environment.appBaseHref },

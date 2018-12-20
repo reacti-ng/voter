@@ -30,18 +30,12 @@ export class UpsertOrgs {
   constructor(readonly orgs: Set<Org>) {}
 }
 
-export const SET_DETAIL_ORG = 'features.org: set detail org';
-export class SetDetailOrg {
-  readonly type = SET_DETAIL_ORG;
-  constructor(readonly org: Org) {}
-}
 
 export type OrgAction
   = AddOrg
   | AddOrgs
   | UpsertOrgs
-  | ResolveOrgs
-  | SetDetailOrg;
+  | ResolveOrgs;
 
 
 export function isOrgAction(obj: any): obj is OrgAction {
@@ -49,7 +43,6 @@ export function isOrgAction(obj: any): obj is OrgAction {
     ADD_ORG,
     ADD_ORGS,
     UPSERT_ORGS,
-    RESOLVE_ORGS,
-    SET_DETAIL_ORG
+    RESOLVE_ORGS
   ].includes(obj.type);
 }

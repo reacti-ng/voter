@@ -6,7 +6,7 @@ import {Poll, pollFromJson} from './poll.model';
 import {select, Store} from '@ngrx/store';
 import {HttpClient} from '@angular/common/http';
 import {AddManyPolls, AddPoll} from './poll.action';
-import {PaginatedResponseFactory} from '../common/model/pagination.service';
+import {PaginatedResponseFactory} from '../common/pagination/pagination.service';
 import {PollState} from './poll.state';
 
 @Injectable()

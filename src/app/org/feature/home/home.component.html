@@ -1,0 +1,19 @@
+
+<div class="detail-title row col-12" *ngIf="detail$ | async as org">
+  <h1 class="display-2">{{org.name}}</h1>
+</div>
+
+<div class="row">
+  <ul class="nav nav-pills flex-column col-2">
+    <li class="nav-item">
+      <a class="nav-link" routerLink="./activity" routerLinkActive="active">Activity</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" routerLink="./members" routerLinkActive="active">Members</a>
+    </li>
+  </ul>
+  <div class="col-10">
+    <router-outlet>
+    </router-outlet>
+  </div>
+</div>

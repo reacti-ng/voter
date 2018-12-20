@@ -8,7 +8,7 @@ import {ProposalState} from './proposal.state';
 import {CoreState} from '../core/core.state';
 import {ModelService} from '../common/model/model.service';
 import {Observable} from 'rxjs';
-import {PaginatedResponseFactory} from '../common/model/pagination.service';
+import {PaginatedResponseFactory} from '../common/pagination/pagination.service';
 import {singleResponseFromJson} from '../common/model/http-response.model';
 
 @Injectable()

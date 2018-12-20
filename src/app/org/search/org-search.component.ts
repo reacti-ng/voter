@@ -3,7 +3,7 @@ import {Component, Inject, OnDestroy} from '@angular/core';
 import {OrgService} from '../org.service';
 import {ControlRef} from '../../common/control/control-ref';
 import {FormArray, FormControl, FormGroup} from '@angular/forms';
-import {debounceTime, shareReplay, switchMap, takeUntil} from 'rxjs/operators';
+import {debounceTime, ignoreElements, shareReplay, switchMap, takeUntil} from 'rxjs/operators';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {Org} from '../org.model';
 
@@ -18,11 +18,12 @@ import {Org} from '../org.model';
 export class OrgSearchComponent implements OnDestroy {
   readonly searchControl = new FormControl('');
   readonly selectedCandidatesSubject = new BehaviorSubject(Set());
+  readonly destroy$ = this.selectedCandidatesSubject.pipe(ignoreElements());
 
   readonly candidates$ = this.searchControl.valueChanges.pipe(
     takeUntil(this.selectedCandidatesSubject),
     debounceTime(300),
-    switchMap(value => this.orgService.fetchMany({params: {q: value}})),
+    switchMap(value => this.orgService.fetchMany(this.destroy$, {params: {q: value}})),
     shareReplay(1)
   );
   readonly selectedCandidates$ = this.selectedCandidatesSubject.pipe();

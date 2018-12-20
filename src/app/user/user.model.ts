@@ -2,10 +2,10 @@ import {Set} from 'immutable';
 import {JsonPointer} from 'json-pointer';
 
 import {JsonArray, JsonObject} from '../common/json/json.model';
-import {fromJsonArray, fromJsonObject} from '../common/json/decoder';
+import {fromJsonAny, fromJsonArray, fromJsonObject} from '../common/json/decoder';
 
-import {Org, orgFromJson} from '../org/org.model';
-import {ModelRef, modelRefFromJson, modelRefToJson} from '../common/model/model-ref.model';
+import {modelRefToJson} from '../common/model/model-ref.model';
+import {OrgMembership, orgMembershipFromJson} from '../org/membership/membership.model';
 
 
 export interface User {
@@ -14,23 +14,8 @@ export interface User {
   readonly id: string;
   readonly name: string;
 
-  readonly memberOf: Set<ModelRef<Org>>;
+  readonly memberOf: Set<OrgMembership>;
 }
-
-export function userToJson(user: Partial<User>): JsonObject {
-  const json: JsonObject = {};
-  if (user.id) {
-    json['id'] = user.id;
-  }
-  if (user.name) {
-    json['name'] = user.name;
-  }
-  if (user.memberOf) {
-    json['memberOf'] = user.memberOf.map(orgRef => modelRefToJson()(orgRef)).toArray();
-  }
-  return json;
-}
-
 
 export const userFromJson = fromJsonObject<User>({
   type: {value: 'user'},
@@ -38,8 +23,8 @@ export const userFromJson = fromJsonObject<User>({
   name: {string: true, ifNull: 'throw'},
   memberOf: {
     source: 'member_of',
-    array: (json: JsonArray, pointer?: JsonPointer) => {
-      const memberOfArr = fromJsonArray(modelRefFromJson(orgFromJson))(json, pointer);
+    array: (json: JsonArray, pointer?: JsonPointer): Set<OrgMembership> => {
+      const memberOfArr = fromJsonArray(fromJsonAny({object: orgMembershipFromJson, ifNull: 'throw'}))(json, pointer);
       return Set(memberOfArr);
     },
     ifNull: Set()

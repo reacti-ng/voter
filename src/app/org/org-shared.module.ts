@@ -4,17 +4,21 @@ import {OrgSearchComponent} from './search/org-search.component';
 import {OrgBadgeComponent} from './membership/badge/badge.component';
 import {PollSharedModule} from '../poll/poll-shared.module';
 import {OrgService} from './org.service';
-import {OrgDetailResolver} from './org-detail.resolver';
+import {CommonPaginationModule} from '../common/pagination/pagination.module';
 
 
 @NgModule({
   imports: [
     CommonModule,
+    CommonPaginationModule,
     PollSharedModule
   ],
   declarations: [
     OrgBadgeComponent,
     OrgSearchComponent,
+  ],
+  providers: [
+    OrgService
   ],
   exports: [
     OrgBadgeComponent,
@@ -22,14 +26,4 @@ import {OrgDetailResolver} from './org-detail.resolver';
   ]
 })
 export class OrgSharedModule {
-  static forRoot() {
-    return {
-      ngModule: OrgSharedModule,
-      providers: [
-        OrgService,
-        OrgDetailResolver
-      ]
-    };
-  }
-
 }

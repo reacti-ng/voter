@@ -1,5 +1,8 @@
-import {JsonObject} from '../common/json/json.model';
-import {fromJsonAny, fromJsonObject} from '../common/json/decoder';
+import {Set} from 'immutable';
+import {JsonPointer} from 'json-pointer';
+
+import {JsonArray, JsonObject} from '../common/json/json.model';
+import {fromJsonAny, fromJsonArray, fromJsonObject} from '../common/json/decoder';
 
 
 export interface Org {
@@ -10,7 +13,7 @@ export interface Org {
 
 export const orgFromJson = fromJsonObject<Org>({
   id: {string: true, ifNull: 'throw'},
-  name: {string: true, ifNull: 'throw'}
+  name: {string: true, ifNull: 'throw'},
 });
 export function orgToJson(org: Org) {
   return {

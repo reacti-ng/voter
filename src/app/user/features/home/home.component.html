@@ -1,0 +1,5 @@
+<ng-container *ngIf="loginUser$ | async as loginUser">
+
+  <app-org-membership-list [memberships]="loginUser.memberOf">
+  </app-org-membership-list>
+</ng-container>

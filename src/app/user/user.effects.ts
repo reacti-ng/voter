@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {Actions, Effect, ofType} from '@ngrx/effects';
 import {UserService} from './user.service';
 import {SET_AUTH_TOKEN, SetAuthToken} from '../common/auth/auth.actions';
-import {concatMap, filter, switchMap} from 'rxjs/operators';
+import {concatMap, filter, switchMap, tap} from 'rxjs/operators';
 import {SetLoginUserId, UpsertUser} from './user.actions';
 import {concat, of} from 'rxjs';
 import {AuthService} from '../common/auth/auth.service';
@@ -19,6 +19,7 @@ export class UserEffects {
 
   @Effect()
   readonly setLoginUserOnGrantChange$ = this.action$.pipe(
+    tap(action => console.log('handled action', action.type)),
     ofType<SetAuthToken>(SET_AUTH_TOKEN),
     // Only apply to the default application
     filter(action => this.authService.appForKey(action.app) === this.authService.defaultApp),

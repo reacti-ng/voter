@@ -1,12 +1,19 @@
 import {Routes} from '@angular/router';
 import {coreRoutes} from './core/core.routes';
 import {IsAuthorizedGuard} from './common/auth/auth.guard';
+import {AuthorizationCodeGrantRedirectHandlerGuard} from './common/auth/authorization-code-grant-redirect-handler.guard';
+import {AppComponent} from './app.component';
 
 export const appRoutes: Routes = [
-  ...coreRoutes,
+  {
+    path: '',
+    pathMatch: 'full',
+    component: AppComponent,
+    canActivate: [AuthorizationCodeGrantRedirectHandlerGuard],
+  },
   {
     path: 'org',
-    loadChildren: './org/org-feature.module#OrgFeatureModule',
+    loadChildren: './org/feature/feature.module#OrgFeatureModule',
     canActivateChild: [
       IsAuthorizedGuard
     ]
@@ -23,7 +30,7 @@ export const appRoutes: Routes = [
     loadChildren: './user/features/login/login.module#UserLoginFeatureModule',
   },
   {
-    path: 'public',
-    loadChildren: './public/public.module#PublicModule'
+    path: 'home',
+    loadChildren: './user/features/home/home.module#UserHomeFeatureModule'
   }
 ];

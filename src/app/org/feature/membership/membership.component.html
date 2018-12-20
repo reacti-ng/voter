@@ -1,0 +1,6 @@
+
+<app-pagination-numbered-page-list #page=page [pagination]="memberPagination$ | async">
+  <app-org-membership-list [memberships]="page.pageResults$ | async">
+  </app-org-membership-list>
+
+</app-pagination-numbered-page-list>

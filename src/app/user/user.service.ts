@@ -8,7 +8,7 @@ import {User, userFromJson} from './user.model';
 import {CoreState} from '../core/core.state';
 import {UserState} from './user.state';
 import {AddManyUsers, AddUser, SetLoginUserId} from './user.actions';
-import {PaginatedResponseFactory} from '../common/model/pagination.service';
+import {PaginatedResponseFactory} from '../common/pagination/pagination.service';
 import {Observable} from 'rxjs';
 import {tap} from 'rxjs/operators';
 import {singleResponseFromJson} from '../common/model/http-response.model';

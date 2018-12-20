@@ -4,8 +4,12 @@
   <ng-container *ngIf="loginUser$ | async as loginUser; else publicMain">
     <ul class="navbar-nav mr-auto">
       <li class="nav-item">
-        <a class="nav-link" routerLink="'/org/e99f85dd-2244-45f7-88ec-9c03f1bf6196/activity'">Polls</a>
+        <a class="nav-link" routerLink="/home">Home</a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link" routerLink="/org/e98f85dd-2244-45f7-88ec-9c03f1bf6196/activity">Polls</a>
+      </li>
+
     </ul>
 
     <div class="user-profile my-2 my-sm-0">{{loginUser.name}}</div>
