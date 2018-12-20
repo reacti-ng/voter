@@ -8,16 +8,11 @@ import {ModelResolver} from './model-resolver.service';
 import {isJsonObject, JsonObject} from '../json/json.model';
 import {ModelRef} from './model-ref.model';
 import {isString} from '../common.types';
-import {SimplePageResponse, simplePageResponseFromJson} from './http-response.model';
 import {Injectable} from '@angular/core';
-import {PageCursorPagination, PageNumberPagination, PaginatedResponseFactory} from './pagination.service';
-import {fromJsonAny} from '../json/decoder';
+import {PageCursorPagination, PageNumberPagination, PaginatedResponseFactory} from '../pagination/pagination.service';
+import {simplePageResponseFromJson} from '../pagination/http-response-page.model';
 
-interface PartiallyResolved<T extends Ident> {
-  resolved: Set<T>;
-  remainingIds: Set<string>;
-}
-
+/** TODO: This should be split into a number of smaller mixins which are provided to services using injection */
 
 @Injectable()
 export abstract class ModelService<T extends Ident> implements ModelResolver<T> {
@@ -33,7 +28,6 @@ export abstract class ModelService<T extends Ident> implements ModelResolver<T> 
     readonly http: HttpClient,
     readonly pagination: PaginatedResponseFactory<T>
   ) {}
-
 
   fetch(id: string, options = {ignoreCache: false}): Observable<T> {
     const fromCache$ = options.ignoreCache ? NEVER : this.entityState$.pipe(
@@ -94,27 +88,27 @@ export abstract class ModelService<T extends Ident> implements ModelResolver<T> 
     );
   }
 
-  fetchMany(options?: {params: HttpParams | {[k: string]: string | string[]}}): Observable<List<T>> {
+  fetchMany(destroy$: Observable<void>, options?: {params: HttpParams | {[k: string]: string | string[]}}): Observable<List<T>> {
     options = options || {params: new HttpParams()};
-    return this.pagination.create(this.path, {
+    return this.pagination.create(this.path, destroy$, {
       paginationType: 'none',
       params: options.params,
       decodeResult: this.fromJson
     });
   }
 
-  search(options?: { params: HttpParams | {[k: string]: string | string[]} }): PageNumberPagination<T> {
+  search(destroy$: Observable<void>, options?: { params: HttpParams | {[k: string]: string | string[]} }): PageNumberPagination<T> {
     options = options || {params: new HttpParams()};
-    return this.pagination.create(this.path, {
+    return this.pagination.create(this.path, destroy$, {
       paginationType: 'page-number',
       params: options.params,
       decodeResult: this.fromJson
     });
   }
 
-  timeline(options?: { params: HttpParams | {[k: string]: string | string[]} }): PageCursorPagination<T> {
+  timeline(destroy$: Observable<void>, options?: { params: HttpParams | {[k: string]: string | string[]} }): PageCursorPagination<T> {
     options = options || {params: new HttpParams()};
-    return this.pagination.create(this.path, {
+    return this.pagination.create(this.path, destroy$, {
       paginationType: 'cursor',
       params: options.params,
       decodeResult: this.fromJson

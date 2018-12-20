@@ -2,44 +2,43 @@
 import {List} from 'immutable';
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
-import {BehaviorSubject, Observable, of, throwError} from 'rxjs';
+import {BehaviorSubject, noop, Observable, of} from 'rxjs';
 import {filter, first, map, scan, shareReplay, switchMap} from 'rxjs/operators';
 
 import {JsonObject} from '../json/json.model';
-
 import {
   CursorPageResponse,
   cursorPageResponseFromJson,
-  NumberedPageResponse, numberedPageResponseFromJson,
-  PaginationType,
-  SimplePageResponse
-} from './http-response.model';
+  NumberedPageResponse,
+  numberedPageResponseFromJson,
+  PaginationType
+} from './http-response-page.model';
 
 @Injectable()
 export class PaginatedResponseFactory<T> {
   constructor(readonly http: HttpClient) {}
 
-  create(url: string, options: {
-    readonly paginationType: 'none'
-    readonly params: HttpParams | {[k: string]: string | string[]},
-    readonly decodeResult: (json: JsonObject) => T
+  create(url: string, destroy$: Observable<void>, options: {
+    readonly paginationType?: 'none'
+    readonly params?: HttpParams | {[k: string]: string | string[]},
+    readonly decodeResult: (json: JsonObject) => T,
   }): Observable<List<T>>;
 
-  create(url: string, options: {
-    readonly paginationType: 'page-number',
-    readonly params: HttpParams | {[k: string]: string | string[]},
-    readonly decodeResult: (json: JsonObject) => T
+  create(url: string, destroy$: Observable<void>, options: {
+    readonly paginationType?: 'page-number',
+    readonly params?: HttpParams | {[k: string]: string | string[]},
+    readonly decodeResult: (json: JsonObject) => T,
   }): PageNumberPagination<T>;
 
-  create(url: string, options: {
-    readonly paginationType: 'cursor',
-    readonly params: HttpParams | {[k: string]: string | string[]},
-    readonly decodeResult: (json: JsonObject) => T
+  create(url: string, destroy$: Observable<void>, options: {
+    readonly paginationType?: 'cursor',
+    readonly params?: HttpParams | {[k: string]: string | string[]},
+    readonly decodeResult: (json: JsonObject) => T,
   }): PageCursorPagination<T>;
 
-  create(url: string, options: {
-    readonly paginationType: PaginationType,
-    readonly params: HttpParams | {[k: string]: string | string[]},
+  create(url: string, destroy$: Observable<void>, options: {
+    readonly paginationType?: PaginationType,
+    readonly params?: HttpParams | {[k: string]: string | string[]},
     readonly decodeResult: (json: JsonObject) => T
   }): PaginatedResponse<T> {
     switch (options.paginationType || 'none') {
@@ -49,9 +48,9 @@ export class PaginatedResponseFactory<T> {
           map((simplePage) => List(simplePage.results))
         );
       case 'page-number':
-        return new PageNumberPagination(this.http, url, options);
+        return new PageNumberPagination(this.http, url, destroy$, options);
       case 'cursor':
-        return new PageCursorPagination(this.http, url, options);
+        return new PageCursorPagination(this.http, url, destroy$, options);
       default:
         throw new Error(`Unrecognised pagination type: (${options.paginationType})`);
     }
@@ -66,9 +65,10 @@ export class PageNumberPagination<T> {
   constructor(
     protected readonly http: HttpClient,
     readonly url: string,
+    destroy$: Observable<void>,
     options: Readonly<{
-      params: HttpParams | {[k: string]: string | string[] },
-      decodeResult: (json: JsonObject) => T
+      params?: HttpParams | {[k: string]: string | string[] },
+      decodeResult: (json: JsonObject) => T,
     }>
   ) {
     this.params = asHttpParams(options.params);
@@ -76,6 +76,9 @@ export class PageNumberPagination<T> {
       throw new Error(`page param should not be present in pagination constructor params`);
     }
     this.decodeResult = options.decodeResult;
+    destroy$.subscribe(noop, noop, () => {
+      this.pageNumberSubject.complete();
+    });
   }
 
   protected readonly pageNumberSubject = new BehaviorSubject<number | 'last'>(1);
@@ -83,10 +86,8 @@ export class PageNumberPagination<T> {
     map(pageNumber => ({params: this.params.set('page', `${pageNumber}`) })),
     switchMap((request) => this.http.get(this.url, {params: request.params})),
     numberedPageResponseFromJson(this.decodeResult),
-    shareReplay(1)
   );
-  // Keep page alive
-  private pageSubscription = this.page$.subscribe();
+  readonly pageResults$ = this.page$.pipe(map(page => page.results));
 
   first(): Observable<List<T>> {
     this.pageNumberSubject.next(1);
@@ -101,28 +102,28 @@ export class PageNumberPagination<T> {
   next(): Observable<List<T>> {
     return this.page$.pipe(
       first(),
-      map(({next, pageNumber}: NumberedPageResponse<T>) => next != null ? pageNumber + 1 : null),
-      switchMap(nextPageNumber => nextPageNumber != null ? this.setCurrentPage(nextPageNumber) : of(List()))
+      switchMap(({next}) => next != null ? this.setCurrentPage(next) : of(List()))
     );
   }
 
   prev(): Observable<List<T>> {
     return this.page$.pipe(
       first(),
-      map(({previous, pageNumber}) => previous != null ? pageNumber - 1 : null),
-      switchMap(prevPageNumber => prevPageNumber != null ? this.setCurrentPage(prevPageNumber) : List())
+      switchMap(({prev}) => prev != null ? this.setCurrentPage(prev) : List())
     );
   }
 
-
-  destroy() {
-    this.pageNumberSubject.complete();
-    this.pageSubscription.unsubscribe();
-  }
-
-  setCurrentPage(pageIndex: number | 'last'): Observable<List<T>> {
-    this.pageNumberSubject.next(pageIndex);
-    return this.waitForPage(pageIndex);
+  setCurrentPage(pageIndex: number | 'last' | 'next' | 'prev'): Observable<List<T>> {
+    console.log('set current page', pageIndex);
+    switch (pageIndex) {
+      case 'next':
+        return this.next();
+      case 'prev':
+        return this.prev();
+      default:
+        this.pageNumberSubject.next(pageIndex);
+        return this.waitForPage(pageIndex);
+    }
   }
 
   protected waitForPage(waitForIndex: number | 'last'): Observable<List<T>> {
@@ -130,9 +131,9 @@ export class PageNumberPagination<T> {
       filter(page => {
         if (waitForIndex === 'last') {
           // pages are 1-indexed
-          return page.pageNumber === page.pageTotal;
+          return page.number === page.total;
         }
-        return page.pageNumber === waitForIndex;
+        return page.number === waitForIndex;
       }),
       map(page => List(page.results)),
       first()
@@ -146,11 +147,16 @@ export class PageCursorPagination<T> {
   constructor(
     protected readonly http: HttpClient,
     readonly url: string,
+    destroy$: Observable<void>,
     readonly options: Readonly<{
       params?: HttpParams | {[k: string]: string | string[]},
       decodeResult: (obj: JsonObject) => T
     }>
-  ) {}
+  ) {
+    destroy$.subscribe(noop, noop, () => {
+      this.cursorSubject.complete();
+    });
+  }
 
   readonly params = asHttpParams(this.options.params);
   readonly decodeResult = this.options.decodeResult;
@@ -167,9 +173,6 @@ export class PageCursorPagination<T> {
     shareReplay(1)
   );
 
-  updateParams(params: {[k: string]: string | string[]} | HttpParams) {
-    return new PageCursorPagination(this.http, this.url, { params, decodeResult: this.decodeResult});
-  }
 }
 
 export type PaginatedResponse<T> = Observable<List<T>> | PageNumberPagination<T> | PageCursorPagination<T>;
