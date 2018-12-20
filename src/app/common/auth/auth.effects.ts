@@ -5,7 +5,7 @@ import {DOCUMENT} from '@angular/common';
 import {concatMap, filter, first, ignoreElements, map, switchMap, switchMapTo, tap} from 'rxjs/operators';
 
 import {Store} from '@ngrx/store';
-import {Actions, Effect, ofType} from '@ngrx/effects';
+import {Actions, Effect, ofType, ROOT_EFFECTS_INIT} from '@ngrx/effects';
 
 import {CALL_LOGIN_REDIRECT, CallLoginRedirect, cloneAuthAction, isAuthAction, SET_AUTH_TOKEN, SetAuthToken} from './auth.actions';
 import {AUTH_DEFAULT_APPLICATION} from './application.model';
@@ -36,20 +36,21 @@ export class AuthEffects {
   );
 
   @Effect()
-  readonly restoreLoginRedirect$ = defer(() => {
-    return loadLoginRedirectAction(this.document.defaultView, this.authService.defaultApp);
-  });
-
+  readonly restoreLoginRedirect$ = this.action$.pipe(
+    ofType(ROOT_EFFECTS_INIT),
+    switchMapTo(defer(() => {
+      return loadLoginRedirectAction(this.document.defaultView, this.authService.defaultApp);
+    }))
+  );
+  /*
   @Effect({dispatch: false})
   readonly callLoginRedirect$ = this.action$.pipe(
     ofType<CallLoginRedirect>(CALL_LOGIN_REDIRECT),
     switchMapTo(this.defaultApp.loginRedirect$.pipe(first())),
-    switchMap(loginRedirect => {
-      debugger;
-      return this.router.navigate(loginRedirect)
-    }),
+    switchMap(loginRedirect => this.router.navigate(loginRedirect) ),
     ignoreElements()
   );
+  */
 
 
   /* TODO: Re-enable this.

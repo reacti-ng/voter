@@ -1,23 +1,12 @@
+
 import {Inject, Injectable} from '@angular/core';
 import {DOCUMENT} from '@angular/common';
 import {ApplicationState} from './application.state';
 import {select} from '@ngrx/store';
-import {OAuth2Token, oauth2TokenFromJson, oauth2TokenToJson} from './oauth2-token.model';
-import {BehaviorSubject, combineLatest, defer, EMPTY, identity, Observable, of, timer, zip} from 'rxjs';
-import {
-  concatMap,
-  distinctUntilChanged,
-  distinctUntilKeyChanged,
-  filter,
-  first,
-  map,
-  skip,
-  switchMap,
-  switchMapTo,
-  takeUntil,
-  tap
-} from 'rxjs/operators';
-import {Actions, Effect, ofType} from '@ngrx/effects';
+import {Actions, Effect, ofType, ROOT_EFFECTS_INIT} from '@ngrx/effects';
+import {oauth2TokenFromJson, oauth2TokenToJson} from './oauth2-token.model';
+import {BehaviorSubject, defer, EMPTY, of} from 'rxjs';
+import {concatMap, filter, first, map, switchMap, switchMapTo, tap} from 'rxjs/operators';
 import {
   CallLoginRedirect,
   SET_AUTH_TOKEN,
@@ -27,7 +16,6 @@ import {
 } from './auth.actions';
 import {JsonObject} from '../json/json.model';
 import {AuthService} from './auth.service';
-import {CoreAuthState} from '../../core/auth/auth.state';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'common.auth::access-token';
 const ACCESS_TOKEN_TIMESTAMP_STORAGE_KEY = 'common.auth::access-token-timestamp';
@@ -65,12 +53,13 @@ export class Oauth2TokenPersistenceEffects {
   );
 
   @Effect()
-  readonly enableTokenPersistenceOnLoad$ = defer(() => {
-    return this.ifHasWindow((window) => {
+  readonly enableTokenPersistenceOnLoad$ = this.action$.pipe(
+    ofType(ROOT_EFFECTS_INIT),
+    switchMap(() => this.ifHasWindow((window) => {
       const isEnabled = window.localStorage.getItem(TOKEN_PERSISTENCE_ENABLED_STORAGE_KEY) === 'true';
       return of(new SetTokenPersistenceIsEnabled(isEnabled, {app: 'login'}));
-    }) || EMPTY;
-  });
+    }) || EMPTY)
+  );
 
   @Effect({dispatch: false})
   readonly storeTokenPersisted$ = this.action$.pipe(
@@ -100,22 +89,25 @@ export class Oauth2TokenPersistenceEffects {
   );
 
   @Effect()
-  readonly restoreSavedAccessToken$ = defer(() => {
-    return this.ifHasWindow((window) => {
-      const isTokenPersistenceEnabled = window.localStorage.getItem(TOKEN_PERSISTENCE_ENABLED_STORAGE_KEY) === 'true';
+  readonly restoreSavedAccessToken$ = this.action$.pipe(
+    ofType(ROOT_EFFECTS_INIT),
+    switchMapTo(defer(() => {
+      return this.ifHasWindow((window) => {
+        const isTokenPersistenceEnabled = window.localStorage.getItem(TOKEN_PERSISTENCE_ENABLED_STORAGE_KEY) === 'true';
 
-      const jsonToken = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
-      const token = jsonToken && oauth2TokenFromJson(JSON.parse(jsonToken) as JsonObject) || null;
+        const jsonToken = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+        const token = jsonToken && oauth2TokenFromJson(JSON.parse(jsonToken) as JsonObject) || null;
 
-      const jsonTimestamp = window.localStorage.getItem(ACCESS_TOKEN_TIMESTAMP_STORAGE_KEY);
-      const timestamp = jsonTimestamp && Number.parseInt(jsonTimestamp, 10) || null;
+        const jsonTimestamp = window.localStorage.getItem(ACCESS_TOKEN_TIMESTAMP_STORAGE_KEY);
+        const timestamp = jsonTimestamp && Number.parseInt(jsonTimestamp, 10) || null;
 
-      if (!isTokenPersistenceEnabled || token == null || timestamp == null || Number.isNaN(timestamp)) {
-        return EMPTY;
-      }
-      return of({token, timestamp});
-    }) || EMPTY;
-  }).pipe(
+        if (!isTokenPersistenceEnabled || token == null || timestamp == null || Number.isNaN(timestamp)) {
+          return EMPTY;
+        }
+        return of({token, timestamp});
+      }) || EMPTY;
+    }))
+  ).pipe(
     concatMap(({token, timestamp}) => [
       new SetAuthToken(token, {useTimestamp: new Date(timestamp), app: this.defaultApp.name}),
       ...token ? [new CallLoginRedirect({app: this.defaultApp.name})] : []

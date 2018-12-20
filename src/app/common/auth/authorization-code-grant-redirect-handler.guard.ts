@@ -19,12 +19,12 @@ export class AuthorizationCodeGrantRedirectHandlerGuard implements CanActivate {
     const responseParams = authorizationCodeGrantResponseFromQueryParams(route.queryParamMap);
     if (responseParams !== null) {
       this.store.dispatch(new AuthorizationCodeGrantTokenExchange(responseParams));
-    } else {
-      return this.router.navigate(['/public']);
     }
     return this.authService.defaultApp.authFlowState$.pipe(
       filter( (state) => !state.authCodeGrantInProgress),
-      switchMap((state) => this.router.navigate(state.token ? state.loginRedirect : ['/public'])),
+      switchMap((state) => {
+        return this.router.navigate(state.token ? state.loginRedirect : ['/public']);
+      }),
       first()
     );
   }
