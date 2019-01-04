@@ -206,7 +206,6 @@ export class AuthorizationCodeGrantApplication extends ApplicationBase {
       singleResponseFromJson(oauth2TokenFromJson)
     );
   }
-
 }
 
 export type AuthApplication

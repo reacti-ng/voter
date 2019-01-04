@@ -19,7 +19,7 @@ import {ApplicationState} from './application.state';
 import {AuthorizationCodeGrantRequest} from './authorization-code-grant.model';
 import {Set} from 'immutable';
 import {filter, first, map, mapTo, tap} from 'rxjs/operators';
-import {BeginAuthorizationCodeGrant, SetLoginRedirect} from './auth.actions';
+import {BeginAuthorizationCodeGrant, SetAuthToken, SetLoginRedirect} from './auth.actions';
 import * as uuid from 'uuid';
 import {isUndefined} from '../common.types';
 
@@ -115,6 +115,10 @@ export class AuthService<CoreAuthState extends Record<keyof CoreAuthState, Appli
 
   setLoginRedirect(commands: any[], options?: {app?: Extract<keyof CoreAuthState, string>}): void {
     this.store.dispatch(new SetLoginRedirect(commands, options));
+  }
+
+  logout(options?: {app?: Extract<keyof CoreAuthState, string>}): void {
+    this.store.dispatch(new SetAuthToken(undefined, options));
   }
 }
 

@@ -1,7 +1,7 @@
 import {Set} from 'immutable';
 import {ParamMap} from '@angular/router';
 import {HttpParams} from '@angular/common/http';
-import {fromJsonAny, fromJsonObject} from '../json/decoder';
+import {fromJsonAny, fromObjectProperties} from '../json/decoder';
 import {JsonObject} from '../json/json.model';
 
 /**

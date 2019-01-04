@@ -2,7 +2,7 @@
  * A CommonAuthUser
  */
 import {Set} from 'immutable';
-import {fromJsonAny, fromJsonObject} from '../json/decoder';
+import {fromJsonAny, fromObjectProperties} from '../json/decoder';
 
 
 export interface OAuth2Token {
@@ -13,7 +13,7 @@ export interface OAuth2Token {
   readonly scope: Set<string>;
 }
 
-export const oauth2TokenFromJson = fromJsonObject<OAuth2Token>({
+export const oauth2TokenFromJson = fromObjectProperties<OAuth2Token>({
     tokenType: {value: 'Bearer'},
     accessToken: {source: 'access_token', string: true, ifNull: 'throw'},
     expiresIn: {source: 'expires_in', number: true, ifNull: 'throw'},
