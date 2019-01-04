@@ -108,18 +108,6 @@ export function fromJsonArray<Item>(decodeItem: JsonDecoder<JsonAny, Item>): Jso
   };
 }
 
-function _fromJsonObject<T>(properties: {[K in keyof T]: JsonDecoder<JsonObject, T[K]>}) {
-  return function (obj: JsonObject, pointer: JsonPointer = []) {
-    const tKeys = Object.keys(properties) as (keyof T)[];
-    const t: Mutable<T> = {};
-
-    for (const k of tKeys) {
-      const pointer_k = [...jsonPointerToArray(pointer), k.toString()];
-      t[k] = properties[k](obj, pointer_k);
-    }
-    return t as T;
-  };
-}
 
 export type ObjectProperty<T> = FromAny<T> & {
   readonly source?: string;
@@ -133,7 +121,7 @@ export type ObjectProperty<T> = FromAny<T> & {
  * A pointer tracking which key we are attempting to decode, from the root of the object.
  * If not provided, it is assumed that we are parsing the root of the json object graph.
  */
-export function fromJsonObject<T>(properties: {[K in Extract<keyof T, string>]: ObjectProperty<T[K]>}) {
+export function fromObjectProperties<T>(properties: {[K in Extract<keyof T, string>]: ObjectProperty<T[K]>}) {
   return function (json: JsonObject, pointer?: JsonPointer) {
     const t: Mutable<T> = {};
     const keys = Object.keys(properties) as (keyof T)[];
