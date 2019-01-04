@@ -30,6 +30,7 @@
     "core-js": "^2.5.4",
     "date-fns": "^1.29.0",
     "immutable": "^4.0.0-rc.12",
+    "ngx-markdown": "^7.0.3",
     "path": "^0.12.7",
     "rxjs": "~6.3.3",
     "url-parse": "^1.4.4",
