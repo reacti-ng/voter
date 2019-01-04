@@ -17,7 +17,7 @@ export class PollService extends ModelService<Poll> {
 
   constructor(
     http: HttpClient,
-    pagination: PaginatedResponseFactory<Poll>,
+    pagination: PaginatedResponseFactory,
     readonly store: Store<object>) {
     super(http, pagination);
   }

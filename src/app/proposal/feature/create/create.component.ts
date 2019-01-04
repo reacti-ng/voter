@@ -1,9 +1,9 @@
 import {Component} from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
 import {Set} from 'immutable';
-import {ProposalService} from '../proposal.service';
+import {ProposalService} from '../../proposal.service';
 import {Observable} from 'rxjs';
-import {ProposalCreateRequest} from '../proposal.model';
+import {ProposalCreateRequest} from '../../proposal.model';
 
 @Component({
   selector: 'app-proposal-create',

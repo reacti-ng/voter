@@ -9,8 +9,8 @@ import {OrgMembershipPageComponent} from './membership/membership.component';
 import {StoreModule} from '@ngrx/store';
 import {OrgFeatureState, reduceOrgFeatureState} from './feature.state';
 import {OrgSharedModule} from '../org-shared.module';
-import {OrgMembershipListModule} from '../membership/membership-list/membership-list.module';
 import {CommonPaginationModule} from '../../common/pagination/pagination.module';
+import {OrgProposalsPageComponent} from './proposals/proposals.component';
 
 @NgModule({
   imports: [
@@ -28,6 +28,10 @@ import {CommonPaginationModule} from '../../common/pagination/pagination.module'
           {
             path: 'members',
             component: OrgMembershipPageComponent
+          },
+          {
+            path: 'proposals',
+            component: OrgProposalsPageComponent
           }
         ]
       }
@@ -36,13 +40,13 @@ import {CommonPaginationModule} from '../../common/pagination/pagination.module'
     OrgSharedModule,
 
     CommonPaginationModule,
-    OrgMembershipListModule,
     PollTimelineModule
   ],
   declarations: [
     OrgHomeComponent,
     OrgActivityPageComponent,
-    OrgMembershipPageComponent
+    OrgMembershipPageComponent,
+    OrgProposalsPageComponent
   ],
   providers: [
     OrgDetailResolver

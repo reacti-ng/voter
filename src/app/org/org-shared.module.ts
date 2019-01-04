@@ -5,13 +5,15 @@ import {OrgBadgeComponent} from './membership/badge/badge.component';
 import {PollSharedModule} from '../poll/poll-shared.module';
 import {OrgService} from './org.service';
 import {CommonPaginationModule} from '../common/pagination/pagination.module';
+import {OrgMembershipInfoModule} from './membership/info/info.module';
 
 
 @NgModule({
   imports: [
     CommonModule,
     CommonPaginationModule,
-    PollSharedModule
+    PollSharedModule,
+    OrgMembershipInfoModule
   ],
   declarations: [
     OrgBadgeComponent,
@@ -22,7 +24,8 @@ import {CommonPaginationModule} from '../common/pagination/pagination.module';
   ],
   exports: [
     OrgBadgeComponent,
-    OrgSearchComponent
+    OrgSearchComponent,
+    OrgMembershipInfoModule
   ]
 })
 export class OrgSharedModule {

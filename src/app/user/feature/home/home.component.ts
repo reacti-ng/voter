@@ -9,9 +9,11 @@ import {UserState} from '../../user.state';
   templateUrl: 'home.component.html'
 })
 export class UserHomeComponent {
+  readonly loginUser$ = this.store.select(UserState.selectLoginUser);
   constructor(readonly store: Store<object>) {
+    this.loginUser$.subscribe(console.log);
   }
 
-  readonly loginUser$ = this.store.select(UserState.selectLoginUser);
+
 
 }

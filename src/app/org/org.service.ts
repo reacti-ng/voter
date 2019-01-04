@@ -7,9 +7,9 @@ import {OrgState} from './org.state';
 import {ModelService} from '../common/model/model.service';
 import {CoreState} from '../core/core.state';
 import {AddOrg, AddOrgs} from './org.actions';
-import {PollService} from '../poll/poll.service';
 import {PageNumberPagination, PaginatedResponseFactory} from '../common/pagination/pagination.service';
 import {Observable} from 'rxjs';
+import {OrgMembership, orgMembershipFromJson} from './membership/membership.model';
 
 @Injectable()
 export class OrgService extends ModelService<Org> {
@@ -19,17 +19,17 @@ export class OrgService extends ModelService<Org> {
 
   constructor(
     http: HttpClient,
-    pagination: PaginatedResponseFactory<Org>,
+    pagination: PaginatedResponseFactory,
     readonly store: Store<CoreState & object>,
-    readonly pollService: PollService
   ) {
     super(http, pagination);
   }
 
-  getOrgMembers(destroy$: Observable<void>, org: Org): PageNumberPagination<Org> {
-    return this.pagination.create(`/api/org/${org.id}/members`, destroy$, {
+  getOrgMembers(org: Org, options?: {notifier?: Observable<void>}): PageNumberPagination<OrgMembership> {
+    return this.pagination.create(`/api/org/${org.id}/members`, {
       paginationType: 'page-number',
-      decodeResult: this.fromJson
+      decodeResult: orgMembershipFromJson,
+      notifier: options && options.notifier
     });
   }
 

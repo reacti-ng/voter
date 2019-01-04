@@ -1,12 +1,13 @@
 import {Component, OnDestroy} from '@angular/core';
-import {BehaviorSubject, Observable, Subject} from 'rxjs';
-import {createSelector, select, Store} from '@ngrx/store';
+import {select, Store} from '@ngrx/store';
+import {BehaviorSubject, combineLatest, Observable, Subject} from 'rxjs';
+import {filter, map, switchMap} from 'rxjs/operators';
+import {selectDetailOrg, selectMembershipPageResults} from '../feature.state';
 import {Org} from '../../org.model';
-import {OrgState} from '../../org.state';
-import {filter, ignoreElements, map, switchMap} from 'rxjs/operators';
-import {selectDetailOrg} from '../feature.state';
 import {OrgService} from '../../org.service';
+import {SetMembershipPageResults} from '../feature.actions';
 import {List} from 'immutable';
+import {OrgMembership} from '../../membership/membership.model';
 
 @Component({
   selector: 'app-org-membership-page',
@@ -14,6 +15,14 @@ import {List} from 'immutable';
 })
 export class OrgMembershipPageComponent implements OnDestroy {
   readonly destroy$ = new Subject<void>();
+  readonly pageNumberSubject = new BehaviorSubject<'next' | 'prev' | 'first' | 'last' | number>(1);
+
+  get pageNumber() {
+    return this.pageNumberSubject.value;
+  }
+  set pageNumber(value: 'next' | 'prev' | 'first' | 'last' | number) {
+    this.pageNumberSubject.next(value);
+  }
 
   constructor(
     readonly store: Store<object>,
@@ -26,10 +35,17 @@ export class OrgMembershipPageComponent implements OnDestroy {
   );
 
   readonly memberPagination$ = this.detail$.pipe(
-    map(org => this.orgService.getOrgMembers(this.destroy$, org))
+    map(org => this.orgService.getOrgMembers(org, {notifier: this.destroy$})),
   );
+
+  readonly pageResults$ = this.store.pipe(select(selectMembershipPageResults));
+
+  readonly pageResultsSubscription = combineLatest(this.memberPagination$, this.pageNumberSubject).pipe(
+    switchMap(([pagination, pageNumber]) => pagination.setCurrentPage(pageNumber))
+  ).subscribe((results) => this.store.dispatch(new SetMembershipPageResults(results)));
 
   ngOnDestroy() {
     this.destroy$.complete();
+    this.pageResultsSubscription.unsubscribe();
   }
 }

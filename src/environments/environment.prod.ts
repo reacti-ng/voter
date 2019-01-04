@@ -21,7 +21,7 @@ export const environment = {
       type: 'authorization-code-grant' as 'authorization-code-grant',
       tokenUrl: 'http://localhost:8000/auth/token/',
       redirectUri: 'http://localhost:4200/',
-      clientId: 'EnxDClOfU2BVV1Ze6zwM0uxcwi6l9nRX9yvfS2hB',
+      clientId: 'b8mp7QxBTe6Cm2UEufhlGrOyfGI62riREa3huGbS',
       apiUrlRegex: '^\/api\/',
       scope: 'user org read write edit'
     }

@@ -1,0 +1,8 @@
+<ng-container *ngIf="loginUser$ | async as loginUser">
+  <ul class="user-memberships" style="list-style: none;">
+    <li *ngFor="let org of loginUser.memberOf">
+      <a routerLink="/org/{{org.id}}/">{{org.name}}</a>
+    </li>
+  </ul>
+
+</ng-container>

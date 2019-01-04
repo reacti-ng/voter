@@ -1,0 +1,29 @@
+:host {
+  display: block;
+
+  img {
+    height: inherit;
+    width: inherit;
+    border-radius: inherit;
+  }
+
+  &.avatar-sm {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  &.avatar-md {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  &.avatar-lg {
+    width: 6rem;
+    height: 6rem;
+  }
+
+  &.avatar-xl {
+    width: 8rem;
+    height: 8rem;
+  }
+}

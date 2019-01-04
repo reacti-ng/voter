@@ -1,18 +1,29 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
+<nav class="navbar navbar-light bg-light">
   <a class="navbar-brand">Voter</a>
 
   <ng-container *ngIf="loginUser$ | async as loginUser; else publicMain">
-    <ul class="navbar-nav mr-auto">
-      <li class="nav-item">
+    <ul class="navbar-nav navbar-expand mr-auto">
+      <li class="nav-item" routerLinkActive="active">
         <a class="nav-link" routerLink="/home">Home</a>
       </li>
-      <li class="nav-item">
-        <a class="nav-link" routerLink="/org/e98f85dd-2244-45f7-88ec-9c03f1bf6196/activity">Polls</a>
+      <li class="nav-item" routerLinkActive="active">
+        <a class="nav-link" routerLink="/profile/{{loginUser.id}}">Profile</a>
       </li>
-
     </ul>
 
-    <div class="user-profile my-2 my-sm-0">{{loginUser.name}}</div>
+    <div class="user-profile my-2 my-sm-0" ngbDropdown>
+      <app-user-avatar class="rounded-circle" [href]="loginUser.avatarHref"></app-user-avatar>
+
+      <div class="border-left-0 border border-primary user-profile-border px-2" ngbDropdownToggle>
+        <button class="btn btn-link" id="profile-dropdown-toggle">{{loginUser.name}}</button>
+      </div>
+
+      <div ngbDropdownMenu aria-labelledby="profile-dropdown">
+        <a class="dropdown-item" routerLink="/home">Home</a>
+        <button class="dropdown-item" (click)="logoutUser()">Logout</button>
+      </div>
+    </div>
+
   </ng-container>
 </nav>
 

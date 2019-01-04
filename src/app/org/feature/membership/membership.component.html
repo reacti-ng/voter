@@ -1,6 +1,6 @@
 
-<app-pagination-numbered-page-list #page=page [pagination]="memberPagination$ | async">
-  <app-org-membership-list [memberships]="page.pageResults$ | async">
-  </app-org-membership-list>
-
+<app-pagination-numbered-page-list [pagination]="memberPagination$ | async"><!-- [(pageNumber)]="pageNumber"-->
+  <div class="card" *ngFor="let membership of pageResults$ | async">
+    <app-org-membership-info [membership]="membership"></app-org-membership-info>
+  </div>
 </app-pagination-numbered-page-list>

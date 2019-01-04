@@ -14,23 +14,23 @@ export const appRoutes: Routes = [
   {
     path: 'org',
     loadChildren: './org/feature/feature.module#OrgFeatureModule',
-    canActivateChild: [
-      IsAuthorizedGuard
-    ]
+    canActivateChild: [IsAuthorizedGuard]
   },
   {
     path: 'proposal',
-    loadChildren: './proposal/proposal-feature.module#ProposalFeatureModule',
-    canActivateChild: [
-      IsAuthorizedGuard
-    ]
+    loadChildren: './proposal/feature/feature.module#ProposalFeatureModule',
+    canActivateChild: [IsAuthorizedGuard]
   },
   {
     path: 'login',
-    loadChildren: './user/features/login/login.module#UserLoginFeatureModule',
+    loadChildren: './user/feature/login/login.module#UserLoginFeatureModule',
   },
   {
     path: 'home',
-    loadChildren: './user/features/home/home.module#UserHomeFeatureModule'
+    loadChildren: './user/feature/home/home.module#UserHomeFeatureModule'
+  },
+  {
+    path: 'profile',
+    loadChildren: './user/feature/profile/profile.module#UserProfileFeatureModule'
   }
 ];

@@ -1,18 +1,25 @@
 import {JsonPointer} from 'json-pointer';
-import {CalendarDate, calendarDateFromJson} from '../../common/date/calendar-date.model';
-import {fromJsonObject} from '../../common/json/decoder';
-import {Org, orgFromJson} from '../org.model';
+import {fromObjectProperties} from '../../common/json/decoder';
 import {JsonObject} from '../../common/json/json.model';
+import {DateTime, dateTimeFromJson} from '../../common/date/date-time.model';
+import {userFromJson} from '../../user/user.model';
 
 export interface OrgMembership {
-  readonly org: Org;
-  created: CalendarDate;
+  readonly id: string;
+  readonly user: {
+    readonly id: string;
+    readonly name: string;
+    readonly avatarHref: string;
+  };
+  readonly createdAt: DateTime;
 }
 
+
 export function orgMembershipFromJson(json: JsonObject, pointer?: JsonPointer): OrgMembership {
-  return fromJsonObject<OrgMembership>({
-    org: {string: true, object: orgFromJson, ifNull: 'throw'},
-    created: {string: calendarDateFromJson, ifNull: 'throw'}
+  return fromObjectProperties<OrgMembership>({
+    id        : {string: true, ifNull: 'throw'},
+    user      : {object: userFromJson, ifNull: 'throw'},
+    createdAt : {string: dateTimeFromJson, ifNull: 'throw', source: 'created_at'}
   })(json, pointer);
 }
 

@@ -22,7 +22,7 @@ export class ProposalService extends ModelService<Proposal> {
 
   constructor(
     readonly http: HttpClient,
-    readonly pagination: PaginatedResponseFactory<Proposal>,
+    readonly pagination: PaginatedResponseFactory,
     readonly store: Store<CoreState & object>
   ) {
     super(http, pagination);

@@ -4,15 +4,15 @@ import {JsonAny, JsonObject} from '../common/json/json.model';
 import {DateTime, dateTimeFromJson} from '../common/date/date-time.model';
 import {Ident} from '../common/model/ident.model';
 import {Proposal, proposalFromJson} from '../proposal/proposal.model';
-import {fromJsonAny, fromJsonObject} from '../common/json/decoder';
+import {fromJsonAny, fromObjectProperties} from '../common/json/decoder';
 
 
 export interface Poll {
   readonly id: string;
   readonly name: string;
 
-  readonly proposal: ModelRef<Proposal>;
-  readonly ballot: ModelRef<Ballot>;
+  readonly proposal: Proposal | string;
+  readonly ballot: Ballot | string;
 
   readonly createAt: Date;
   readonly openAt: Date | null;
@@ -23,7 +23,7 @@ export interface Poll {
   readonly ballotIssuerId: string | null;
 }
 
-export const pollFromJson = fromJsonObject<Poll>({
+export const pollFromJson = fromObjectProperties<Poll>({
   id:       {string: true, ifNull: 'throw'},
   name:     {string: true, ifNull: 'throw'},
   ballot:   {...modelRefProperty(ballotFromJson), ifNull: 'throw'},

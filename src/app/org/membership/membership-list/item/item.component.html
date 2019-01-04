@@ -1,6 +1,0 @@
-<div class="card">
-  <h5 class="card-title" *ngIf="org$ | async as org">{{org.name}}</h5>
-  <p class="card-text">Member since {{membership?.created | date}}</p>
-
-  <ng-container *ngTemplateOutlet="bodyTemplate; context: context"></ng-container>
-</div>

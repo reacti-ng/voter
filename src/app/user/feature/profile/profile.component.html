@@ -1,0 +1,21 @@
+<div class="row" *ngIf="profileUser$ | async as profileUser">
+    <div class="col-3">
+      <app-user-avatar class="avatar-xl" [href]="profileUser.avatarHref"></app-user-avatar>
+    </div>
+
+    <div class="col-9">
+      <h1>{{profileUser.name}}</h1>
+      <h2>Member of</h2>
+      <ul>
+        <li *ngFor="let membership of profileUser.memberOf">
+          <a routerLink="/org/{{membership.orgId}}"><h2>{{membership.orgName}}</h2></a>
+          <h3>Proposals</h3>
+          <ul>
+            <li *ngFor="let proposal of membership.createdProposals">
+              <a routerLink="/proposal/{{proposal.id}}">{{proposal.code}}</a>{{proposal.description}}
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+</div>

@@ -1,0 +1,35 @@
+@import "assets/styles/shared.scss";
+
+:host {
+  .navbar-nav {
+    .nav-item {
+      a.nav-link {
+        padding-right: 0.5rem;
+        padding-left: 0.5rem;
+      }
+    }
+  }
+
+  .user-profile {
+    position: relative;
+    line-height: 2rem;
+
+    app-user-avatar {
+      display: inline-block;
+      position: absolute;
+      height: 100%;
+    }
+
+    .user-profile-border {
+      // Also must extend 1em before the heading.
+      margin-left: 1rem;
+    }
+    .user-profile-border::before {
+      display: inline-block;
+      width: 1rem;
+      content: '';
+      background-color: black;
+    }
+
+  }
+}

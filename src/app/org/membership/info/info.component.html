@@ -1,0 +1,9 @@
+<div class="card" *ngIf="membership">
+  <div class="card-title">
+    <img class="user-avatar" [attr.src]=""/>
+    <a class="h4" routerLink="/profile/{{membership.user.id}}">{{membership.user.name}}</a>
+  </div>
+  <div class="card-body">
+
+  </div>
+</div>
