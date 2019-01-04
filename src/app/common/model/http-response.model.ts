@@ -1,9 +1,8 @@
 import {OperatorFunction} from 'rxjs';
 import {map} from 'rxjs/operators';
-import {JsonPointer} from 'json-pointer';
 
-import {fromJsonAny, fromJsonArray, fromJsonObject, JsonDecoder} from '../json/decoder';
-import {JsonAny, JsonArray, JsonObject,} from '../json/json.model';
+import {fromJsonAny, JsonDecoder} from '../json/decoder';
+import {JsonAny, JsonObject} from '../json/json.model';
 
 export type SingleResponse<T> = T;
 export function singleResponseFromJson<T>(decodeResult: JsonDecoder<JsonObject, T>): OperatorFunction<JsonAny, T> {

@@ -1,7 +1,7 @@
 import {Collection, List, Set} from 'immutable';
 import {EntityState} from '@ngrx/entity';
-import {NEVER, Observable, of, race} from 'rxjs';
-import {filter, first, map, switchMap, tap} from 'rxjs/operators';
+import {concat, NEVER, Observable, of, race, timer} from 'rxjs';
+import {concatMapTo, filter, first, map, switchMap, switchMapTo, tap} from 'rxjs/operators';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Ident} from './ident.model';
 import {ModelResolver} from './model-resolver.service';
@@ -26,13 +26,21 @@ export abstract class ModelService<T extends Ident> implements ModelResolver<T> 
 
   protected constructor(
     readonly http: HttpClient,
-    readonly pagination: PaginatedResponseFactory<T>
+    readonly pagination: PaginatedResponseFactory
   ) {}
 
   fetch(id: string, options = {ignoreCache: false}): Observable<T> {
     const fromCache$ = options.ignoreCache ? NEVER : this.entityState$.pipe(
       map(state => state.entities[id]),
       filter(entity => entity !== undefined)
+    );
+
+    // A  http request _might_ be performed, we don't want to return synchronously
+    // sometimes and async other times.
+    // The principle of least surprise is that `fetch` will _always_ return
+    // asynchronously, even if reading from the store.
+    const asyncFromCache$ = timer(0).pipe(
+      concatMapTo(fromCache$)
     );
 
     const fromServer$ = this.http.get(`${this.path}/${id}`).pipe(
@@ -45,7 +53,7 @@ export abstract class ModelService<T extends Ident> implements ModelResolver<T> 
       tap((entity) => this.addEntity(entity))
     );
 
-    return race(fromCache$, fromServer$).pipe(first());
+    return race(asyncFromCache$, fromServer$).pipe(first());
   }
 
   /**
@@ -88,30 +96,33 @@ export abstract class ModelService<T extends Ident> implements ModelResolver<T> 
     );
   }
 
-  fetchMany(destroy$: Observable<void>, options?: {params: HttpParams | {[k: string]: string | string[]}}): Observable<List<T>> {
+  fetchMany(destroy$: Observable<void>, options?: {params: HttpParams | {[k: string]: string | string[]}, notifyDestroy?: Observable<void>}): Observable<List<T>> {
     options = options || {params: new HttpParams()};
-    return this.pagination.create(this.path, destroy$, {
+    return this.pagination.create(this.path, {
       paginationType: 'none',
-      params: options.params,
-      decodeResult: this.fromJson
+      params: options && options.params,
+      decodeResult: this.fromJson,
+      notifier: options && options.notifyDestroy
     });
   }
 
-  search(destroy$: Observable<void>, options?: { params: HttpParams | {[k: string]: string | string[]} }): PageNumberPagination<T> {
+  search(options?: { params: HttpParams | {[k: string]: string | string[]}, notifyDestroy?: Observable<void>}): PageNumberPagination<T> {
     options = options || {params: new HttpParams()};
-    return this.pagination.create(this.path, destroy$, {
+    return this.pagination.create(this.path, {
       paginationType: 'page-number',
-      params: options.params,
-      decodeResult: this.fromJson
+      params: options && options.params,
+      decodeResult: this.fromJson,
+      notifier: options && options.notifyDestroy
     });
   }
 
-  timeline(destroy$: Observable<void>, options?: { params: HttpParams | {[k: string]: string | string[]} }): PageCursorPagination<T> {
+  timeline(destroy$: Observable<void>, options?: { params: HttpParams | {[k: string]: string | string[]}, notifyDestroy?: Observable<void> }): PageCursorPagination<T> {
     options = options || {params: new HttpParams()};
-    return this.pagination.create(this.path, destroy$, {
+    return this.pagination.create(this.path, {
       paginationType: 'cursor',
       params: options.params,
-      decodeResult: this.fromJson
+      decodeResult: this.fromJson,
+      notifier: options && options.notifyDestroy
     });
   }
 
