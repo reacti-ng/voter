@@ -1,45 +1,26 @@
-import {Component, Input, OnDestroy, OnInit, Output} from '@angular/core';
-import {PageNumberPagination, PaginatedResponseFactory} from '../pagination.service';
-import {BehaviorSubject, combineLatest, Subject} from 'rxjs';
-import {map, switchMap, tap} from 'rxjs/operators';
+import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
+import {BehaviorSubject} from 'rxjs';
+import {switchMap} from 'rxjs/operators';
+import {List} from 'immutable';
+
+import {PageNumberPagination} from '../pagination.service';
 
 @Component({
   selector: 'app-pagination-numbered-page-list',
   templateUrl: './numbered-page-list.component.html',
-  exportAs: 'page'
 })
 export class PaginationNumberedPageListComponent<T> implements OnDestroy {
+  @Input() pagination: PageNumberPagination<T> | undefined;
 
-  private paginationSubject = new Subject<PageNumberPagination<T>>();
   private pageNumberSubject = new BehaviorSubject<number | 'prev' | 'next' | 'last'>(1);
-
-  @Input() set pagination(pagination: PageNumberPagination<T>) {
-    console.log('next pagination', pagination);
-    this.paginationSubject.next(pagination);
+  @Input()
+  set pageNumber(pageNumber: number | 'prev' | 'next' | 'last') {
+    this.pageNumberSubject.next(pageNumber);
   }
-
-  readonly page$ = this.paginationSubject.pipe(switchMap(pagination => pagination.page$));
-  readonly pageResults$ = this.page$.pipe(
-    map(page => page.results),
-    tap(page => console.log('member-page', page))
-  );
-
-
-  constructor(
-    readonly paginationFactory: PaginatedResponseFactory<T>
-  ) {
-    combineLatest(this.paginationSubject, this.pageNumberSubject).pipe(
-      switchMap(([pagination, pageNumber]) => {
-        console.log('setting page to ', pageNumber);
-        return pagination.setCurrentPage(pageNumber);
-      })
-    ).subscribe();
-  }
+  @Output()
+  pageNumberChange = this.pageNumberSubject.pipe();
 
   ngOnDestroy() {
-    this.paginationSubject.complete();
     this.pageNumberSubject.complete();
   }
-
-
 }

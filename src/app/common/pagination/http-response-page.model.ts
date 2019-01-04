@@ -1,4 +1,4 @@
-import {fromJsonAny, fromJsonArray, fromJsonObject, JsonDecoder} from '../json/decoder';
+import {fromJsonAny, fromJsonArray, fromObjectProperties, JsonDecoder} from '../json/decoder';
 import {OperatorFunction} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {JsonPointer} from 'json-pointer';
@@ -19,7 +19,7 @@ function resultsFromJson<T>(decodeResult: JsonDecoder<JsonObject, T>, pointer?: 
 }
 
 export function simplePageResponseFromJson<T>(decodeResult: JsonDecoder<JsonObject, T>): OperatorFunction<JsonAny, SimplePageResponse<T>> {
-  return singleResponseFromJson(fromJsonObject<SimplePageResponse<T>>({
+  return singleResponseFromJson(fromObjectProperties<SimplePageResponse<T>>({
     paginationType: {value: 'none'},
     results: {array: resultsFromJson(decodeResult), ifNull: 'throw'}
   }));
@@ -43,7 +43,7 @@ export function numberedPageResponseFromJson<T>(
   decodeResult: JsonDecoder<JsonObject, T>
 ): OperatorFunction<JsonAny, NumberedPageResponse<T>> {
   return singleResponseFromJson(
-    fromJsonObject<NumberedPageResponse<T>>({
+    fromObjectProperties<NumberedPageResponse<T>>({
       paginationType: { value: 'page-number' },
       results:        { array: resultsFromJson(decodeResult) },
       number:         { number: true, ifNull: 'throw' },
@@ -62,7 +62,7 @@ export interface CursorPageResponse<T> {
 
 export function cursorPageResponseFromJson<T>(decodeResult: JsonDecoder<JsonObject, T>): OperatorFunction<JsonAny, CursorPageResponse<T>> {
   return singleResponseFromJson(
-    fromJsonObject<CursorPageResponse<T>>({
+    fromObjectProperties<CursorPageResponse<T>>({
       paginationType: {value: 'cursor'},
       results: {array: resultsFromJson(decodeResult), ifNull: 'throw'}
     })

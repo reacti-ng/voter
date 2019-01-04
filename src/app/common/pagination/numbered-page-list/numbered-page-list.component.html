@@ -1,5 +1,11 @@
 
 <div class="pagination-controls">
+  <ng-container *ngIf="pagination?.page$ | async as page">
+    <ngb-pagination class="d-flex justify-content-end"
+                    [collectionSize]="page.total"
+                    [(page)]="pageNumber">
 
+    </ngb-pagination>
+  </ng-container>
 </div>
 <ng-content></ng-content>

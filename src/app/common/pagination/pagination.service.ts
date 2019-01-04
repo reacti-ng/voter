@@ -2,7 +2,7 @@
 import {List} from 'immutable';
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
-import {BehaviorSubject, noop, Observable, of} from 'rxjs';
+import {BehaviorSubject, NEVER, noop, Observable, of} from 'rxjs';
 import {filter, first, map, scan, shareReplay, switchMap} from 'rxjs/operators';
 
 import {JsonObject} from '../json/json.model';
@@ -15,32 +15,37 @@ import {
 } from './http-response-page.model';
 
 @Injectable()
-export class PaginatedResponseFactory<T> {
+export class PaginatedResponseFactory {
   constructor(readonly http: HttpClient) {}
 
-  create(url: string, destroy$: Observable<void>, options: {
+  create<T>(url: string, options: {
     readonly paginationType?: 'none'
     readonly params?: HttpParams | {[k: string]: string | string[]},
     readonly decodeResult: (json: JsonObject) => T,
+    readonly notifier?: Observable<void>
   }): Observable<List<T>>;
 
-  create(url: string, destroy$: Observable<void>, options: {
+  create<T>(url: string, options: {
     readonly paginationType?: 'page-number',
     readonly params?: HttpParams | {[k: string]: string | string[]},
     readonly decodeResult: (json: JsonObject) => T,
+    readonly notifier?: Observable<void>
   }): PageNumberPagination<T>;
 
-  create(url: string, destroy$: Observable<void>, options: {
+  create<T>(url: string, options: {
     readonly paginationType?: 'cursor',
     readonly params?: HttpParams | {[k: string]: string | string[]},
     readonly decodeResult: (json: JsonObject) => T,
+    readonly notifier?: Observable<void>,
   }): PageCursorPagination<T>;
 
-  create(url: string, destroy$: Observable<void>, options: {
+  create<T>(url: string, options: {
     readonly paginationType?: PaginationType,
     readonly params?: HttpParams | {[k: string]: string | string[]},
     readonly decodeResult: (json: JsonObject) => T
+    readonly notifier?: Observable<void>
   }): PaginatedResponse<T> {
+    const destroy$ = options && options.notifier || NEVER;
     switch (options.paginationType || 'none') {
       case 'none':
         return this.http.get(url, {params: options.params}).pipe(
@@ -62,6 +67,9 @@ export class PageNumberPagination<T> {
   readonly params: HttpParams;
   readonly decodeResult: (json: JsonObject) => T;
 
+  protected readonly pageNumberSubject = new BehaviorSubject<number | 'last'>(1);
+  readonly page$: Observable<NumberedPageResponse<T>>;
+
   constructor(
     protected readonly http: HttpClient,
     readonly url: string,
@@ -76,18 +84,19 @@ export class PageNumberPagination<T> {
       throw new Error(`page param should not be present in pagination constructor params`);
     }
     this.decodeResult = options.decodeResult;
+
+    this.page$ = this.pageNumberSubject.pipe(
+      map(pageNumber => ({params: this.params.set('page', `${pageNumber}`)})),
+      switchMap((request) => this.http.get(this.url, {params: request.params})),
+      numberedPageResponseFromJson(this.decodeResult),
+    );
+    this.page$.subscribe((page) => {
+      console.log('received page', page);
+    });
     destroy$.subscribe(noop, noop, () => {
       this.pageNumberSubject.complete();
     });
   }
-
-  protected readonly pageNumberSubject = new BehaviorSubject<number | 'last'>(1);
-  readonly page$ = this.pageNumberSubject.pipe(
-    map(pageNumber => ({params: this.params.set('page', `${pageNumber}`) })),
-    switchMap((request) => this.http.get(this.url, {params: request.params})),
-    numberedPageResponseFromJson(this.decodeResult),
-  );
-  readonly pageResults$ = this.page$.pipe(map(page => page.results));
 
   first(): Observable<List<T>> {
     this.pageNumberSubject.next(1);
@@ -113,9 +122,10 @@ export class PageNumberPagination<T> {
     );
   }
 
-  setCurrentPage(pageIndex: number | 'last' | 'next' | 'prev'): Observable<List<T>> {
-    console.log('set current page', pageIndex);
+  setCurrentPage(pageIndex: number | 'first' | 'last' | 'next' | 'prev'): Observable<List<T>> {
     switch (pageIndex) {
+      case 'first':
+        return this.first();
       case 'next':
         return this.next();
       case 'prev':
