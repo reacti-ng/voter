@@ -22,16 +22,18 @@ from rest_framework import routers
 
 from org.views import OrgViewSet
 from poll import views as poll_views
+from proposal.views import ProposalViewSet
 from user import views as user_views
 
 router = routers.DefaultRouter()
 router.register('org', OrgViewSet)
 router.register('poll', poll_views.PollViewSet)
-router.register('user', user_views.UserViewSet)
+router.register('proposal', ProposalViewSet)
 
+router.register('user', user_views.UserViewSet)
 urlpatterns = [
     path('admin/', admin.site.urls),
 
     path('api/', include(router.urls)),
     path('auth/', include('oauth2_provider.urls', namespace='oauth2_provider'))
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+] 
