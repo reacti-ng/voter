@@ -2,8 +2,6 @@ import uuid
 
 from django.db import models
 
-# Create your models here.
-
 
 class Org(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -11,11 +9,10 @@ class Org(models.Model):
 
     members = models.ManyToManyField('user.User', through='OrgMembership', through_fields=('org', 'user'))
 
-
 class OrgMembership(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey('user.User', on_delete=models.CASCADE)
     org  = models.ForeignKey(Org, on_delete=models.CASCADE)
+    user = models.ForeignKey('user.User', on_delete=models.CASCADE)
 
     created_at = models.DateField(auto_now_add=True)
 
@@ -29,3 +26,17 @@ class OrgMembership(models.Model):
         blank=True,
         on_delete=models.SET_NULL
     )
+
+    @property
+    def org_name(self):
+        return self.org.name
+
+
+    @property
+    def created_proposals(self):
+        from proposal.models import Proposal
+        return (Proposal.objects
+            .filter(by=self.user.id)
+            .order_by('-created_at')
+        )
+

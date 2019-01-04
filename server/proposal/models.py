@@ -23,3 +23,10 @@ class Proposal(models.Model):
     # if the previous proposal is deleted, that's a problem.
     #previous = models.ForeignKey('self', on_delete=models.PROTECT, null=True)
 
+class UserProposalActivity(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    proposal = models.ForeignKey(Proposal, on_delete=models.CASCADE)
+    user = models.ForeignKey('user.User', on_delete=models.SET_NULL, null=True)
+
+    type = models.CharField(max_length=32)

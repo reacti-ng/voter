@@ -52,3 +52,17 @@ class User(AbstractUser):
     def get_grant(self, client_id):
         return self.all_grants().get(application__client_id=client_id)
 
+
+def user_profile_avatar_path(user_info, filename):
+    """ Uploaded avatars go to MEDIA_ROOT/user_<id>/<filename>"""
+    return 'user_{0}/avatars/{1}'.format(instance.user.id, filename)
+
+
+class UserInfo(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, editable=False, on_delete=models.CASCADE)
+
+    avatar_href = models.ImageField(
+        upload_to=user_profile_avatar_path,
+        null=True
+    )
