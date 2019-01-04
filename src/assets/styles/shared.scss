@@ -1,0 +1,18 @@
+/**
+ * This is the file imported by components which need access to
+ * bootstrap variables, functions and mixins and represents a
+ * "safe subset" of the styles which can be imported by components
+ * while avoiding class duplication across components.
+ *
+ * It also forms the basis of the global stylesheet, so that the
+ * local and global styles agree on the values of all the shared
+ * variables.
+ */
+
+// Bootstrap variable overrides
+$primary: #421234;
+
+@import "~bootstrap/scss/functions";
+@import "~bootstrap/scss/mixins";
+@import "~bootstrap/scss/variables";
+
